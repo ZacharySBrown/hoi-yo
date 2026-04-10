@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOI-YO Observer Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ─── Header ──────────────────────────────────────────────────── -->
+<header class="header">
+    <div class="header-left">
+        <div class="logo">HOI-YO<span>observer</span></div>
+        <div class="game-info">
+            <div class="info-block">
+                <div class="label">Turn</div>
+                <div class="value" id="turn-number">--</div>
+            </div>
+            <div class="info-block">
+                <div class="label">Date</div>
+                <div class="value" id="game-date">----.--.--</div>
+            </div>
+            <div class="info-block">
+                <div class="label">Tension</div>
+                <div class="value" id="world-tension">--%</div>
+            </div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="speed-controls">
+            <span class="label">Speed</span>
+            <button class="speed-btn pause-btn" data-speed="0" title="Pause">&#10074;&#10074;</button>
+            <button class="speed-btn" data-speed="1">1</button>
+            <button class="speed-btn" data-speed="2">2</button>
+            <button class="speed-btn active" data-speed="3">3</button>
+            <button class="speed-btn" data-speed="4">4</button>
+            <button class="speed-btn" data-speed="5">5</button>
+        </div>
+        <div class="connection-status">
+            <div class="connection-dot" id="ws-dot"></div>
+            <span id="ws-status">Connecting</span>
+        </div>
+    </div>
+</header>
+
+<!-- ─── Timeline ────────────────────────────────────────────────── -->
+<div class="timeline-bar">
+    <div class="timeline-labels">
+        <span>1936</span>
+    </div>
+    <div class="timeline-track">
+        <div class="timeline-fill" id="timeline-fill" style="width: 0%"></div>
+    </div>
+    <div class="timeline-labels">
+        <span>1948</span>
+    </div>
+</div>
+
+<!-- ─── Main Content ────────────────────────────────────────────── -->
+<main class="main-content">
+    <div class="nation-grid" id="nation-grid">
+
+        <!-- Germany -->
+        <div class="nation-card" data-tag="GER" style="--nation-accent: var(--nation-GER)">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="country-flag">&#x1F1E9;&#x1F1EA;</span>
+                    <div class="country-info">
+                        <h3>Germany</h3>
+                        <div class="persona-name" data-field="persona">--</div>
+                    </div>
+                </div>
+                <div class="war-indicator" data-field="war-indicator">AT WAR</div>
+            </div>
+            <div class="mood-badge" data-field="mood">--</div>
+            <div class="monologue-preview" data-field="monologue-preview">Awaiting first turn data...</div>
+            <div class="card-stats">
+                <div class="stat"><div class="stat-label">MIC</div><div class="stat-value" data-field="mic">--</div></div>
+                <div class="stat"><div class="stat-label">CIC</div><div class="stat-value" data-field="cic">--</div></div>
+                <div class="stat"><div class="stat-label">NIC</div><div class="stat-value" data-field="nic">--</div></div>
+                <div class="stat"><div class="stat-label">DIV</div><div class="stat-value" data-field="div">--</div></div>
+            </div>
+            <div class="mind-reader">
+                <div class="mind-reader-grid">
+                    <div class="mind-section">
+                        <h4>&#128065; Inner Monologue</h4>
+                        <div class="full-monologue" data-field="full-monologue">--</div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#9876; Strategy Changes</h4>
+                        <ul class="strategy-list" data-field="strategies">
+                            <li>No data yet</li>
+                        </ul>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#128680; Threat Assessment</h4>
+                        <div class="threat-bars" data-field="threats">
+                            <div class="threat-row">
+                                <span class="threat-label">--</span>
+                                <div class="threat-bar-track"><div class="threat-bar-fill" style="width:0%"></div></div>
+                                <span class="threat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#129302; Model Info</h4>
+                        <div class="model-badge" data-field="model">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Soviet Union -->
+        <div class="nation-card" data-tag="SOV" style="--nation-accent: var(--nation-SOV)">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="country-flag">&#x1F1F7;&#x1F1FA;</span>
+                    <div class="country-info">
+                        <h3>Soviet Union</h3>
+                        <div class="persona-name" data-field="persona">--</div>
+                    </div>
+                </div>
+                <div class="war-indicator" data-field="war-indicator">AT WAR</div>
+            </div>
+            <div class="mood-badge" data-field="mood">--</div>
+            <div class="monologue-preview" data-field="monologue-preview">Awaiting first turn data...</div>
+            <div class="card-stats">
+                <div class="stat"><div class="stat-label">MIC</div><div class="stat-value" data-field="mic">--</div></div>
+                <div class="stat"><div class="stat-label">CIC</div><div class="stat-value" data-field="cic">--</div></div>
+                <div class="stat"><div class="stat-label">NIC</div><div class="stat-value" data-field="nic">--</div></div>
+                <div class="stat"><div class="stat-label">DIV</div><div class="stat-value" data-field="div">--</div></div>
+            </div>
+            <div class="mind-reader">
+                <div class="mind-reader-grid">
+                    <div class="mind-section">
+                        <h4>&#128065; Inner Monologue</h4>
+                        <div class="full-monologue" data-field="full-monologue">--</div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#9876; Strategy Changes</h4>
+                        <ul class="strategy-list" data-field="strategies">
+                            <li>No data yet</li>
+                        </ul>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#128680; Threat Assessment</h4>
+                        <div class="threat-bars" data-field="threats">
+                            <div class="threat-row">
+                                <span class="threat-label">--</span>
+                                <div class="threat-bar-track"><div class="threat-bar-fill" style="width:0%"></div></div>
+                                <span class="threat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#129302; Model Info</h4>
+                        <div class="model-badge" data-field="model">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- United States -->
+        <div class="nation-card" data-tag="USA" style="--nation-accent: var(--nation-USA)">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="country-flag">&#x1F1FA;&#x1F1F8;</span>
+                    <div class="country-info">
+                        <h3>United States</h3>
+                        <div class="persona-name" data-field="persona">--</div>
+                    </div>
+                </div>
+                <div class="war-indicator" data-field="war-indicator">AT WAR</div>
+            </div>
+            <div class="mood-badge" data-field="mood">--</div>
+            <div class="monologue-preview" data-field="monologue-preview">Awaiting first turn data...</div>
+            <div class="card-stats">
+                <div class="stat"><div class="stat-label">MIC</div><div class="stat-value" data-field="mic">--</div></div>
+                <div class="stat"><div class="stat-label">CIC</div><div class="stat-value" data-field="cic">--</div></div>
+                <div class="stat"><div class="stat-label">NIC</div><div class="stat-value" data-field="nic">--</div></div>
+                <div class="stat"><div class="stat-label">DIV</div><div class="stat-value" data-field="div">--</div></div>
+            </div>
+            <div class="mind-reader">
+                <div class="mind-reader-grid">
+                    <div class="mind-section">
+                        <h4>&#128065; Inner Monologue</h4>
+                        <div class="full-monologue" data-field="full-monologue">--</div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#9876; Strategy Changes</h4>
+                        <ul class="strategy-list" data-field="strategies">
+                            <li>No data yet</li>
+                        </ul>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#128680; Threat Assessment</h4>
+                        <div class="threat-bars" data-field="threats">
+                            <div class="threat-row">
+                                <span class="threat-label">--</span>
+                                <div class="threat-bar-track"><div class="threat-bar-fill" style="width:0%"></div></div>
+                                <span class="threat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#129302; Model Info</h4>
+                        <div class="model-badge" data-field="model">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- United Kingdom -->
+        <div class="nation-card" data-tag="ENG" style="--nation-accent: var(--nation-ENG)">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="country-flag">&#x1F1EC;&#x1F1E7;</span>
+                    <div class="country-info">
+                        <h3>United Kingdom</h3>
+                        <div class="persona-name" data-field="persona">--</div>
+                    </div>
+                </div>
+                <div class="war-indicator" data-field="war-indicator">AT WAR</div>
+            </div>
+            <div class="mood-badge" data-field="mood">--</div>
+            <div class="monologue-preview" data-field="monologue-preview">Awaiting first turn data...</div>
+            <div class="card-stats">
+                <div class="stat"><div class="stat-label">MIC</div><div class="stat-value" data-field="mic">--</div></div>
+                <div class="stat"><div class="stat-label">CIC</div><div class="stat-value" data-field="cic">--</div></div>
+                <div class="stat"><div class="stat-label">NIC</div><div class="stat-value" data-field="nic">--</div></div>
+                <div class="stat"><div class="stat-label">DIV</div><div class="stat-value" data-field="div">--</div></div>
+            </div>
+            <div class="mind-reader">
+                <div class="mind-reader-grid">
+                    <div class="mind-section">
+                        <h4>&#128065; Inner Monologue</h4>
+                        <div class="full-monologue" data-field="full-monologue">--</div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#9876; Strategy Changes</h4>
+                        <ul class="strategy-list" data-field="strategies">
+                            <li>No data yet</li>
+                        </ul>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#128680; Threat Assessment</h4>
+                        <div class="threat-bars" data-field="threats">
+                            <div class="threat-row">
+                                <span class="threat-label">--</span>
+                                <div class="threat-bar-track"><div class="threat-bar-fill" style="width:0%"></div></div>
+                                <span class="threat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#129302; Model Info</h4>
+                        <div class="model-badge" data-field="model">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Japan -->
+        <div class="nation-card" data-tag="JAP" style="--nation-accent: var(--nation-JAP)">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="country-flag">&#x1F1EF;&#x1F1F5;</span>
+                    <div class="country-info">
+                        <h3>Japan</h3>
+                        <div class="persona-name" data-field="persona">--</div>
+                    </div>
+                </div>
+                <div class="war-indicator" data-field="war-indicator">AT WAR</div>
+            </div>
+            <div class="mood-badge" data-field="mood">--</div>
+            <div class="monologue-preview" data-field="monologue-preview">Awaiting first turn data...</div>
+            <div class="card-stats">
+                <div class="stat"><div class="stat-label">MIC</div><div class="stat-value" data-field="mic">--</div></div>
+                <div class="stat"><div class="stat-label">CIC</div><div class="stat-value" data-field="cic">--</div></div>
+                <div class="stat"><div class="stat-label">NIC</div><div class="stat-value" data-field="nic">--</div></div>
+                <div class="stat"><div class="stat-label">DIV</div><div class="stat-value" data-field="div">--</div></div>
+            </div>
+            <div class="mind-reader">
+                <div class="mind-reader-grid">
+                    <div class="mind-section">
+                        <h4>&#128065; Inner Monologue</h4>
+                        <div class="full-monologue" data-field="full-monologue">--</div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#9876; Strategy Changes</h4>
+                        <ul class="strategy-list" data-field="strategies">
+                            <li>No data yet</li>
+                        </ul>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#128680; Threat Assessment</h4>
+                        <div class="threat-bars" data-field="threats">
+                            <div class="threat-row">
+                                <span class="threat-label">--</span>
+                                <div class="threat-bar-track"><div class="threat-bar-fill" style="width:0%"></div></div>
+                                <span class="threat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#129302; Model Info</h4>
+                        <div class="model-badge" data-field="model">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Italy -->
+        <div class="nation-card" data-tag="ITA" style="--nation-accent: var(--nation-ITA)">
+            <div class="card-header">
+                <div class="card-identity">
+                    <span class="country-flag">&#x1F1EE;&#x1F1F9;</span>
+                    <div class="country-info">
+                        <h3>Italy</h3>
+                        <div class="persona-name" data-field="persona">--</div>
+                    </div>
+                </div>
+                <div class="war-indicator" data-field="war-indicator">AT WAR</div>
+            </div>
+            <div class="mood-badge" data-field="mood">--</div>
+            <div class="monologue-preview" data-field="monologue-preview">Awaiting first turn data...</div>
+            <div class="card-stats">
+                <div class="stat"><div class="stat-label">MIC</div><div class="stat-value" data-field="mic">--</div></div>
+                <div class="stat"><div class="stat-label">CIC</div><div class="stat-value" data-field="cic">--</div></div>
+                <div class="stat"><div class="stat-label">NIC</div><div class="stat-value" data-field="nic">--</div></div>
+                <div class="stat"><div class="stat-label">DIV</div><div class="stat-value" data-field="div">--</div></div>
+            </div>
+            <div class="mind-reader">
+                <div class="mind-reader-grid">
+                    <div class="mind-section">
+                        <h4>&#128065; Inner Monologue</h4>
+                        <div class="full-monologue" data-field="full-monologue">--</div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#9876; Strategy Changes</h4>
+                        <ul class="strategy-list" data-field="strategies">
+                            <li>No data yet</li>
+                        </ul>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#128680; Threat Assessment</h4>
+                        <div class="threat-bars" data-field="threats">
+                            <div class="threat-row">
+                                <span class="threat-label">--</span>
+                                <div class="threat-bar-track"><div class="threat-bar-fill" style="width:0%"></div></div>
+                                <span class="threat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mind-section">
+                        <h4>&#129302; Model Info</h4>
+                        <div class="model-badge" data-field="model">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ─── Whisper Bar ──────────────────────────────────────────────── -->
+<div class="whisper-bar">
+    <span class="label">Whisper</span>
+    <select id="whisper-target">
+        <option value="GER">Germany</option>
+        <option value="SOV">Soviet Union</option>
+        <option value="USA">United States</option>
+        <option value="ENG">United Kingdom</option>
+        <option value="JAP">Japan</option>
+        <option value="ITA">Italy</option>
+    </select>
+    <input type="text" id="whisper-input" placeholder="Send a message to the agent..." autocomplete="off">
+    <button class="whisper-btn" id="whisper-send">Send</button>
+</div>
+
+<!-- ─── Connecting Overlay ──────────────────────────────────────── -->
+<div class="connecting-overlay visible" id="connecting-overlay">
+    <div class="connecting-spinner"></div>
+    <div class="connecting-text">Connecting to HOI-YO...</div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
