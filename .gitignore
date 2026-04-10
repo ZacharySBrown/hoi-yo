@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+.eggs/
+*.egg
+.venv/
+venv/
+
+# Environment
+.env
+
+# Build output
+build/
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local settings (not committed)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# HOI4
+*.hoi4
