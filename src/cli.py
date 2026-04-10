@@ -175,22 +175,44 @@ def run(
             click.echo("Warning: Could not auto-launch HOI4. Continuing -- launch the game manually.")
 
     click.echo("Starting orchestrator loop...")
+    click.echo(f"Watching for saves in: {config.game.save_dir}")
+    click.echo("Press Ctrl+C to stop.\n")
 
-    # Stub: the orchestrator module doesn't exist yet.
-    # When it does, this will be:
-    #   from src.orchestrator import Orchestrator
-    #   orchestrator = Orchestrator(config, popcorn=popcorn, deep_dive=deep_dive)
-    #   asyncio.run(orchestrator.run())
+    from src.orchestrator import HoiYoOrchestrator
+    from src.personas.loader import load_all_personas
+    from src.dashboard.server import dashboard as dashboard_server, start as start_dashboard
+
+    # Load personas
+    personas = load_all_personas(Path("personas"), config.personas.mappings)
+    click.echo(f"Loaded {len(personas)} personas: {', '.join(p.name for p in personas)}\n")
+
+    # Set personas on dashboard
+    dashboard_server.set_personas([{"tag": p.tag, "name": p.name} for p in personas])
+
+    # Start dashboard in background thread
+    import threading
+    dash_thread = threading.Thread(
+        target=start_dashboard,
+        args=(config.dashboard,),
+        daemon=True,
+    )
+    dash_thread.start()
+    click.echo(f"Dashboard running at http://localhost:{config.dashboard.port}\n")
+
+    # Run orchestrator
+    orchestrator = HoiYoOrchestrator(
+        config=config,
+        personas=personas,
+        dashboard=dashboard_server,
+        headless=(mode == "headless"),
+        popcorn=popcorn,
+        deep_dive=deep_dive,
+    )
+
     try:
-        from src.orchestrator import Orchestrator  # type: ignore[import-not-found]
-
-        orchestrator = Orchestrator(config, popcorn=popcorn, deep_dive=deep_dive)
         asyncio.run(orchestrator.run())
-    except ImportError:
-        click.echo(
-            "Orchestrator not yet implemented.  The game controller and save "
-            "watcher are ready -- build src/orchestrator.py next.",
-        )
+    except KeyboardInterrupt:
+        click.echo("\nShutting down...")
 
 
 # ── dashboard ────────────────────────────────────────────────────────
@@ -204,15 +226,8 @@ def dashboard(ctx: click.Context, port: int | None) -> None:
     actual_port = port if port is not None else config.dashboard.port
     click.echo(f"Starting dashboard on port {actual_port}...")
 
-    try:
-        from src.dashboard import app  # type: ignore[import-not-found]
-        import uvicorn
-
-        uvicorn.run(app, host="0.0.0.0", port=actual_port)
-    except ImportError:
-        click.echo(
-            "Dashboard not yet implemented.  Build src/dashboard/app.py next."
-        )
+    from src.dashboard.server import start as start_dashboard
+    start_dashboard(config.dashboard)
 
 
 # ── swap ─────────────────────────────────────────────────────────────
@@ -306,6 +321,52 @@ def status(ctx: click.Context) -> None:
     else:
         click.echo("  No active game found.")
         click.echo("  Start one with: hoi-yo run --local")
+
+
+# ── launch ──────────────────────────────────────────────────────────
+
+@cli.command()
+@click.option("--observe", is_flag=True, help="Auto-send observe command once you're in a game.")
+@click.pass_context
+def launch(ctx: click.Context, observe: bool) -> None:
+    """Launch Hearts of Iron IV from Steam.
+
+    Start HOI4, then manually start a new game. Once you're on the map,
+    use --observe or run scripts/observe.sh to enter observer mode.
+    """
+    import subprocess
+
+    config = _resolve_config(ctx)
+    exe = config.game.hoi4_executable
+
+    click.echo("Launching Hearts of Iron IV...")
+    click.echo(f"  Executable: {exe}")
+
+    if exe.suffix == ".app":
+        # macOS .app bundle
+        subprocess.Popen(["open", str(exe), "--args", "-debug"])
+    else:
+        subprocess.Popen([str(exe), "-debug"])
+
+    click.echo()
+    click.echo("HOI4 is starting. Once it loads:")
+    click.echo("  1. Click Single Player -> pick a country -> Play")
+    click.echo("  2. Then run: scripts/observe.sh")
+    click.echo("     (or manually: backtick -> observe -> Enter)")
+    click.echo("  3. Then run: hoi-yo run --local")
+
+    if observe:
+        click.echo()
+        click.echo("Waiting 60s for game to load, then sending observe command...")
+        import time
+        time.sleep(60)
+        scripts_dir = Path(__file__).parent.parent / "scripts"
+        result = subprocess.run(["bash", str(scripts_dir / "observe.sh")], capture_output=True, text=True)
+        if result.returncode == 0:
+            click.echo(result.stdout)
+        else:
+            click.echo(f"observe.sh failed: {result.stderr}")
+            click.echo("Send the command manually: backtick -> observe -> Enter")
 
 
 # ── deploy ───────────────────────────────────────────────────────────

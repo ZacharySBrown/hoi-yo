@@ -13,6 +13,10 @@ dependencies = [
     "watchdog>=4.0",
     "pydantic>=2.6",
     "httpx>=0.27",
+    "pyjwt>=2.8",
+    "bcrypt>=4.1",
+    "aiosqlite>=0.19",
+    "python-multipart>=0.0.5",
 ]
 
 [project.optional-dependencies]
@@ -28,7 +32,10 @@ hoi-yo = "src.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

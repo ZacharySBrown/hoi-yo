@@ -1,8 +1,8 @@
 [game]
-hoi4_executable = "~/.steam/steam/steamapps/common/Hearts of Iron IV/hoi4"
-save_dir = "~/.local/share/Paradox Interactive/Hearts of Iron IV/save games"
-mod_dir = "~/.local/share/Paradox Interactive/Hearts of Iron IV/mod/hoi_yo_bots"
-config_dir = "~/.local/share/Paradox Interactive/Hearts of Iron IV"
+hoi4_executable = "/Users/zak/Library/Application Support/Steam/steamapps/common/Hearts of Iron IV/hoi4.app"
+save_dir = "/Users/zak/Documents/Paradox Interactive/Hearts of Iron IV/save games"
+mod_dir = "/Users/zak/Documents/Paradox Interactive/Hearts of Iron IV/mod/hoi_yo_bots"
+config_dir = "/Users/zak/Documents/Paradox Interactive/Hearts of Iron IV"
 use_xvfb = false
 autosave_interval = "MONTHLY"
 initial_speed = 3
@@ -29,3 +29,8 @@ port = 8080
 enable_vnc = true
 vnc_port = 6080
 popcorn_mode_pause = 5
+
+[cloud]
+enabled = false
+database_path = "data/hoi-yo.db"
+auto_shutdown_minutes = 30

@@ -14,7 +14,8 @@ from watchdog.observers import Observer
 
 logger = logging.getLogger(__name__)
 
-AUTOSAVE_PATTERN = "autosave*.hoi4"
+SAVE_PATTERN = "*.hoi4"
+IGNORE_PATTERNS = ["*_temp.hoi4", "*_temp_*"]
 DEBOUNCE_SECONDS = 2.0
 
 
@@ -38,8 +39,13 @@ class _SaveHandler(FileSystemEventHandler):
             return
 
         path = Path(event.src_path)
-        if not fnmatch.fnmatch(path.name, AUTOSAVE_PATTERN):
+        if not fnmatch.fnmatch(path.name, SAVE_PATTERN):
             return
+        # Skip temp files HOI4 writes during save
+        for ignore in IGNORE_PATTERNS:
+            if fnmatch.fnmatch(path.name, ignore):
+                logger.debug("Ignoring temp save: %s", path.name)
+                return
 
         now = time.monotonic()
         if now - self._last_event_time < DEBOUNCE_SECONDS:
@@ -47,7 +53,7 @@ class _SaveHandler(FileSystemEventHandler):
             return
 
         self._last_event_time = now
-        logger.info("New autosave detected: %s", path.name)
+        logger.info("New save detected: %s", path.name)
         self._loop.call_soon_threadsafe(self._queue.put_nowait, path)
 
 

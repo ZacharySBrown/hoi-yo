@@ -49,11 +49,23 @@ class DashboardConfig:
 
 
 @dataclass
+class CloudConfig:
+    enabled: bool = False
+    database_path: str = "data/hoi-yo.db"
+    auto_shutdown_minutes: int = 30
+
+
+@dataclass
 class HoiYoConfig:
     game: GameConfig
     personas: PersonaMapping
     api: ApiConfig
     dashboard: DashboardConfig
+    cloud: CloudConfig = None
+
+    def __post_init__(self):
+        if self.cloud is None:
+            self.cloud = CloudConfig()
 
 
 def load_config(config_path: Path) -> HoiYoConfig:
@@ -82,4 +94,7 @@ def load_config(config_path: Path) -> HoiYoConfig:
     dash_raw = raw.get("dashboard", {})
     dashboard = DashboardConfig(**{k: v for k, v in dash_raw.items()})
 
-    return HoiYoConfig(game=game, personas=personas, api=api, dashboard=dashboard)
+    cloud_raw = raw.get("cloud", {})
+    cloud = CloudConfig(**{k: v for k, v in cloud_raw.items()})
+
+    return HoiYoConfig(game=game, personas=personas, api=api, dashboard=dashboard, cloud=cloud)

@@ -35,6 +35,74 @@ from src.interfaces import (
 
 logger = logging.getLogger(__name__)
 
+# ─── Cost Tracking ───────────────────────────────────────────────────
+
+# Pricing per million tokens (as of April 2026)
+MODEL_PRICING = {
+    "claude-haiku-4-5":  {"input": 1.00, "output": 5.00, "cache_read": 0.10, "cache_write": 1.25},
+    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00, "cache_read": 0.30, "cache_write": 3.75},
+    "claude-opus-4-6":   {"input": 5.00, "output": 25.00, "cache_read": 0.50, "cache_write": 6.25},
+}
+
+class CostTracker:
+    """Tracks cumulative API costs across all agent calls."""
+
+    def __init__(self):
+        self.total_cost = 0.0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.total_cache_read_tokens = 0
+        self.total_cache_write_tokens = 0
+        self.calls_by_model = {}
+        self.cost_by_turn = []
+
+    def record(self, model: str, usage) -> float:
+        """Record a single API call's usage. Returns cost of this call."""
+        pricing = MODEL_PRICING.get(model, MODEL_PRICING["claude-haiku-4-5"])
+
+        input_tokens = getattr(usage, "input_tokens", 0) or 0
+        output_tokens = getattr(usage, "output_tokens", 0) or 0
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
+
+        # Cost = uncached input + cached reads + cache writes + output
+        uncached_input = max(0, input_tokens - cache_read - cache_write)
+        cost = (
+            uncached_input * pricing["input"] / 1_000_000
+            + cache_read * pricing["cache_read"] / 1_000_000
+            + cache_write * pricing["cache_write"] / 1_000_000
+            + output_tokens * pricing["output"] / 1_000_000
+        )
+
+        self.total_cost += cost
+        self.total_input_tokens += input_tokens
+        self.total_output_tokens += output_tokens
+        self.total_cache_read_tokens += cache_read
+        self.total_cache_write_tokens += cache_write
+        self.calls_by_model[model] = self.calls_by_model.get(model, 0) + 1
+
+        return cost
+
+    def record_turn(self, turn_cost: float):
+        self.cost_by_turn.append(turn_cost)
+
+    def to_dict(self) -> dict:
+        return {
+            "total_cost": round(self.total_cost, 4),
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens,
+            "total_cache_read_tokens": self.total_cache_read_tokens,
+            "total_cache_write_tokens": self.total_cache_write_tokens,
+            "calls_by_model": self.calls_by_model,
+            "total_calls": sum(self.calls_by_model.values()),
+            "cost_by_turn": [round(c, 4) for c in self.cost_by_turn],
+            "avg_cost_per_turn": round(self.total_cost / len(self.cost_by_turn), 4) if self.cost_by_turn else 0,
+        }
+
+
+# Module-level singleton
+cost_tracker = CostTracker()
+
 
 async def run_agents(
     personas: list[Persona],
@@ -56,7 +124,14 @@ async def run_agents(
         _call_agent(persona, shared_system, board_state, turn, client, api_config)
         for persona in personas
     ]
-    return list(await asyncio.gather(*tasks))
+    results = list(await asyncio.gather(*tasks))
+
+    # Sum up turn cost from individual call costs
+    turn_cost = sum(getattr(r, '_call_cost', 0) for r in results)
+    cost_tracker.record_turn(turn_cost)
+    logger.info("Turn %d cost: $%.4f | Total: $%.4f", turn, turn_cost, cost_tracker.total_cost)
+
+    return results
 
 
 def _build_shared_system(
@@ -119,6 +194,9 @@ async def _call_agent(
         tool_choice={"type": "tool", "name": "submit_strategy"},
     )
 
+    # Track cost
+    call_cost = cost_tracker.record(model, response.usage) if response.usage else 0.0
+
     # Extract the tool use block from the response
     data = _extract_tool_input(response)
 
@@ -128,6 +206,7 @@ async def _call_agent(
         data=data,
         model=model,
     )
+    decision._call_cost = call_cost  # Attach for turn-level aggregation
 
     logger.info(
         "Agent %s: mood=%s, %d diplomatic, %d military, %d production strategies",

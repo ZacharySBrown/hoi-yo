@@ -14,14 +14,14 @@ from pathlib import Path
 
 from anthropic import AsyncAnthropic
 
-from src.agents.runner import run_agents
+from src.agents.runner import run_agents, cost_tracker
 from src.board_state.builder import BoardStateBuilder
 from src.config import HoiYoConfig
 from src.dashboard.server import DashboardServer
 from src.game.controller import GameController
 from src.game.save_watcher import SaveWatcher
 from src.interfaces import Persona
-from src.parser.save_parser import parse_save
+from src.parser.fast_parser import parse_save_fast as parse_save
 from src.writer.strategy_writer import StrategyWriter
 
 logger = logging.getLogger("hoi-yo")
@@ -48,10 +48,7 @@ class HoiYoOrchestrator:
 
         self.client = AsyncAnthropic()
         self.board_builder = BoardStateBuilder()
-        self.writer = StrategyWriter(
-            templates_dir=Path(__file__).parent / "writer" / "templates",
-            output_dir=config.game.mod_dir,
-        )
+        self.writer = StrategyWriter()
         self.game: GameController | None = None
         self.turn_number = 0
         self.log_dir = Path("logs")
@@ -175,6 +172,7 @@ class HoiYoOrchestrator:
                 {"name": w.name, "attackers": w.attackers, "defenders": w.defenders}
                 for w in raw_state.wars
             ],
+            "cost": cost_tracker.to_dict(),
         }
         await self.dashboard.broadcast(turn_data)
 
