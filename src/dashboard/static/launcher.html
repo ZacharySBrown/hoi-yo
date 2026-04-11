@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOI-YO Launcher</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+    /* ================================================================
+       HOI-YO Launcher -- Inline Styles
+       ================================================================ */
+
+    body {
+        padding-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+
+    .launcher-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-lg) var(--space-xl);
+        background: var(--bg-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .launcher-brand {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-sm);
+    }
+
+    .launcher-logo {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 5px;
+        color: var(--accent);
+        text-transform: uppercase;
+    }
+
+    .launcher-subtitle {
+        font-size: 12px;
+        letter-spacing: 2px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 500;
+    }
+
+    .setup-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+
+    .setup-btn:hover {
+        background: var(--bg-card-hover);
+        color: var(--text-primary);
+        border-color: var(--border-hover);
+    }
+
+    /* ─── Main Content ───────────────────────────────────────────── */
+
+    .launcher-main {
+        flex: 1;
+        max-width: 680px;
+        width: 100%;
+        margin: 0 auto;
+        padding: var(--space-xl) var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-lg);
+    }
+
+    /* ─── Panel (shared card style) ──────────────────────────────── */
+
+    .launcher-panel {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+    }
+
+    .panel-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: var(--space-md);
+        display: block;
+    }
+
+    /* ─── Role Selector ──────────────────────────────────────────── */
+
+    .role-selector {
+        display: flex;
+        gap: var(--space-sm);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .role-option {
+        position: relative;
+    }
+
+    .role-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .role-label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+
+    .role-label:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-hover);
+        color: var(--text-primary);
+    }
+
+    .role-option input[type="radio"]:checked + .role-label {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+
+    .play-as-dropdown {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 12px;
+        font-size: 13px;
+        font-family: var(--font-sans);
+        cursor: pointer;
+        transition: border-color 0.15s ease;
+    }
+
+    .play-as-dropdown:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .play-as-dropdown:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    /* ─── AI Opponents Grid ──────────────────────────────────────── */
+
+    .opponents-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .opponent-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        padding: 10px var(--space-md);
+        background: var(--bg-panel);
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    .opponent-row:hover {
+        border-color: var(--border);
+    }
+
+    .opponent-row.is-player {
+        border-color: var(--accent);
+        background: rgba(233, 69, 96, 0.06);
+    }
+
+    .opponent-row.disabled {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
+    .opponent-flag {
+        font-size: 22px;
+        line-height: 1;
+        flex-shrink: 0;
+        width: 28px;
+        text-align: center;
+    }
+
+    .opponent-name {
+        font-size: 13px;
+        font-weight: 600;
+        min-width: 120px;
+        flex-shrink: 0;
+    }
+
+    .opponent-persona {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .persona-select {
+        width: 100%;
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 6px 10px;
+        font-size: 12px;
+        font-family: var(--font-sans);
+        cursor: pointer;
+        transition: border-color 0.15s ease;
+    }
+
+    .persona-select:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .you-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 14px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border-radius: var(--radius-sm);
+    }
+
+    .opponent-toggle {
+        flex-shrink: 0;
+    }
+
+    .opponent-toggle input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg-card);
+        cursor: pointer;
+        position: relative;
+        transition: all 0.15s ease;
+    }
+
+    .opponent-toggle input[type="checkbox"]:checked {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+
+    .opponent-toggle input[type="checkbox"]:checked::after {
+        content: "\2713";
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .opponent-toggle input[type="checkbox"]:hover {
+        border-color: var(--border-hover);
+    }
+
+    /* ─── Options Row ────────────────────────────────────────────── */
+
+    .options-row {
+        display: flex;
+        gap: var(--space-lg);
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .option-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .option-group-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .option-group .speed-controls {
+        gap: 3px;
+    }
+
+    .option-check {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .option-check input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg-card);
+        cursor: pointer;
+        position: relative;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .option-check input[type="checkbox"]:checked {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+
+    .option-check input[type="checkbox"]:checked::after {
+        content: "\2713";
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .option-check span {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    /* ─── Launch Button ──────────────────────────────────────────── */
+
+    .launch-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-sm);
+        width: 100%;
+        padding: 18px var(--space-xl);
+        background: linear-gradient(135deg, #e94560, #d63a52);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-lg);
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: var(--font-sans);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .launch-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .launch-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(233, 69, 96, 0.4);
+    }
+
+    .launch-btn:hover::before {
+        opacity: 1;
+    }
+
+    .launch-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 16px rgba(233, 69, 96, 0.3);
+    }
+
+    .launch-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* ─── Status Bar ─────────────────────────────────────────────── */
+
+    .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-lg);
+        border-top: 1px solid var(--border);
+        background: var(--bg-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    .status-text {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+
+    .status-ok {
+        color: #22c55e;
+    }
+
+    .status-warn {
+        color: #eab308;
+    }
+
+    .status-change-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        padding: 2px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-family: var(--font-sans);
+    }
+
+    .status-change-btn:hover {
+        border-color: var(--border-hover);
+        color: var(--text-secondary);
+    }
+
+    /* ─── Overlays (shared) ──────────────────────────────────────── */
+
+    .overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 20, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 500;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-lg);
+    }
+
+    .overlay.visible {
+        display: flex;
+    }
+
+    .overlay-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-xl);
+        max-width: 440px;
+        width: 90%;
+    }
+
+    .overlay-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--space-lg);
+        text-align: center;
+    }
+
+    .overlay-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-lg);
+    }
+
+    .overlay-field label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .overlay-field input[type="text"] {
+        background: var(--bg-panel);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 14px;
+        font-size: 13px;
+        font-family: var(--font-mono);
+        transition: border-color 0.15s ease;
+    }
+
+    .overlay-field input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .overlay-save-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s ease;
+        font-family: var(--font-sans);
+    }
+
+    .overlay-save-btn:hover {
+        background: #d63a52;
+    }
+
+    /* ─── Post-Launch Overlay ────────────────────────────────────── */
+
+    .post-launch-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .post-launch-status {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: 1px;
+    }
+
+    .instruction-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg) var(--space-xl);
+        max-width: 440px;
+        width: 90%;
+        text-align: left;
+    }
+
+    .instruction-card h3 {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-muted);
+        margin-bottom: var(--space-md);
+        text-align: center;
+    }
+
+    .instruction-steps {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .instruction-steps li {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .step-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--accent-dim);
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .step-highlight {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .ready-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-sm);
+        width: 100%;
+        max-width: 440px;
+        padding: 16px var(--space-xl);
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-lg);
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: var(--font-sans);
+        margin-top: var(--space-sm);
+    }
+
+    .ready-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(34, 197, 94, 0.35);
+    }
+
+    .ready-btn:active {
+        transform: translateY(0);
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────────── */
+
+    @media (max-width: 700px) {
+        .launcher-main {
+            padding: var(--space-md);
+        }
+
+        .launcher-header {
+            padding: var(--space-md);
+        }
+
+        .opponent-name {
+            min-width: 80px;
+            font-size: 12px;
+        }
+
+        .options-row {
+            gap: var(--space-md);
+        }
+
+        .role-selector {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .role-label {
+            justify-content: center;
+        }
+
+        .play-as-dropdown {
+            width: 100%;
+        }
+    }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="launcher-header">
+    <div class="launcher-brand">
+        <span class="launcher-logo">HOI-YO</span>
+        <span class="launcher-subtitle">AI War Room</span>
+    </div>
+    <button class="setup-btn" id="setup-btn" title="Setup">&#9881;</button>
+</header>
+
+<!-- Main Content -->
+<main class="launcher-main">
+
+    <!-- Role Selector -->
+    <div class="launcher-panel">
+        <span class="panel-label">Your Role</span>
+        <div class="role-selector">
+            <div class="role-option">
+                <input type="radio" name="role" id="role-observer" value="observer" checked>
+                <label class="role-label" for="role-observer">Observer (watch all AI)</label>
+            </div>
+            <div class="role-option">
+                <input type="radio" name="role" id="role-player" value="player">
+                <label class="role-label" for="role-player">Play as:</label>
+            </div>
+            <select class="play-as-dropdown" id="play-as-select" disabled>
+                <option value="GER">&#127465;&#127466; Germany</option>
+                <option value="SOV">&#127479;&#127482; Soviet Union</option>
+                <option value="USA">&#127482;&#127480; United States</option>
+                <option value="ENG">&#127468;&#127463; United Kingdom</option>
+                <option value="JAP">&#127471;&#127477; Japan</option>
+                <option value="ITA">&#127470;&#127481; Italy</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- AI Opponents Grid -->
+    <div class="launcher-panel">
+        <span class="panel-label">AI Nations</span>
+        <div class="opponents-grid" id="opponents-grid">
+            <!-- Built by JS -->
+        </div>
+    </div>
+
+    <!-- Options Row -->
+    <div class="launcher-panel">
+        <span class="panel-label">Options</span>
+        <div class="options-row">
+            <div class="option-group">
+                <span class="option-group-label">Speed</span>
+                <div class="speed-controls">
+                    <button class="speed-btn" data-speed="1">1</button>
+                    <button class="speed-btn" data-speed="2">2</button>
+                    <button class="speed-btn active" data-speed="3">3</button>
+                    <button class="speed-btn" data-speed="4">4</button>
+                    <button class="speed-btn" data-speed="5">5</button>
+                </div>
+            </div>
+            <div class="option-group">
+                <span class="option-group-label">Modes</span>
+                <label class="option-check">
+                    <input type="checkbox" id="opt-popcorn">
+                    <span>Popcorn Mode</span>
+                </label>
+                <label class="option-check">
+                    <input type="checkbox" id="opt-deepdive">
+                    <span>Deep Dive</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Launch Button -->
+    <button class="launch-btn" id="launch-btn">&#9654; Launch Game</button>
+
+</main>
+
+<!-- Status Bar -->
+<footer class="status-bar">
+    <span class="status-text" id="status-text">HOI4: Checking...</span>
+    <button class="status-change-btn" id="status-change-btn">Change</button>
+</footer>
+
+<!-- Setup Overlay -->
+<div class="overlay" id="setup-overlay">
+    <div class="overlay-card">
+        <h2 class="overlay-title">Setup</h2>
+        <div class="overlay-field">
+            <label for="hoi4-path-input">Hearts of Iron IV Path</label>
+            <input type="text" id="hoi4-path-input" placeholder="/path/to/Hearts of Iron IV">
+        </div>
+        <button class="overlay-save-btn" id="setup-save-btn">Save</button>
+    </div>
+</div>
+
+<!-- Post-Launch Overlay -->
+<div class="overlay" id="post-launch-overlay">
+    <div class="post-launch-spinner"></div>
+    <div class="post-launch-status">HOI4 is starting...</div>
+    <div class="instruction-card">
+        <h3>In the Game</h3>
+        <ol class="instruction-steps">
+            <li>
+                <span class="step-number">1</span>
+                <span>Click <span class="step-highlight">Single Player</span></span>
+            </li>
+            <li>
+                <span class="step-number">2</span>
+                <span id="instruction-country">Pick your country</span>
+            </li>
+            <li>
+                <span class="step-number">3</span>
+                <span>Click <span class="step-highlight">Play</span></span>
+            </li>
+        </ol>
+    </div>
+    <button class="ready-btn" id="ready-btn">&#10003; I'm in the Game</button>
+</div>
+
+<script src="/static/launcher.js"></script>
+</body>
+</html>

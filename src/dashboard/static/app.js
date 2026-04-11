@@ -1,8 +1,8 @@
 /**
- * HOI-YO Observer Dashboard v2 -- Client Application
+ * HOI-YO Observer Dashboard v3 -- Client Application
  *
- * Clean vanilla JS powering a diplomatic web SVG, nation intelligence
- * cards, event timeline, and real-time WebSocket updates.
+ * Diplomatic web SVG (with minor powers), nation intelligence cards,
+ * agent minds tabs, icon-rich event timeline, and real-time WebSocket.
  */
 (function () {
     "use strict";
@@ -19,6 +19,45 @@
         JAP: { name: "Japan",          flag: "\u{1F1EF}\u{1F1F5}", accent: "#dc2626" },
         ITA: { name: "Italy",          flag: "\u{1F1EE}\u{1F1F9}", accent: "#ca8a04" },
     };
+
+    const MINOR_POWERS = {
+        FRA: { name: "France",          flag: "\u{1F1EB}\u{1F1F7}", accent: "#2563eb" },
+        POL: { name: "Poland",          flag: "\u{1F1F5}\u{1F1F1}", accent: "#dc2626" },
+        CHI: { name: "China",           flag: "\u{1F1E8}\u{1F1F3}", accent: "#eab308" },
+        PRC: { name: "Comm. China",     flag: "\u{1F1E8}\u{1F1F3}", accent: "#dc2626" },
+        CAN: { name: "Canada",          flag: "\u{1F1E8}\u{1F1E6}", accent: "#ef4444" },
+        RAJ: { name: "British Raj",     flag: "\u{1F1EE}\u{1F1F3}", accent: "#f97316" },
+        AUS: { name: "Austria",         flag: "\u{1F1E6}\u{1F1F9}", accent: "#ef4444" },
+        CZE: { name: "Czechoslovakia",  flag: "\u{1F1E8}\u{1F1FF}", accent: "#2563eb" },
+        HUN: { name: "Hungary",         flag: "\u{1F1ED}\u{1F1FA}", accent: "#16a34a" },
+        ROM: { name: "Romania",         flag: "\u{1F1F7}\u{1F1F4}", accent: "#2563eb" },
+        YUG: { name: "Yugoslavia",      flag: "\u{1F1F7}\u{1F1F8}", accent: "#2563eb" },
+        BUL: { name: "Bulgaria",        flag: "\u{1F1E7}\u{1F1EC}", accent: "#16a34a" },
+        GRE: { name: "Greece",          flag: "\u{1F1EC}\u{1F1F7}", accent: "#2563eb" },
+        TUR: { name: "Turkey",          flag: "\u{1F1F9}\u{1F1F7}", accent: "#dc2626" },
+        SPA: { name: "Nat. Spain",      flag: "\u{1F1EA}\u{1F1F8}", accent: "#eab308" },
+        SPR: { name: "Rep. Spain",      flag: "\u{1F1EA}\u{1F1F8}", accent: "#a855f7" },
+        POR: { name: "Portugal",        flag: "\u{1F1F5}\u{1F1F9}", accent: "#16a34a" },
+        FIN: { name: "Finland",         flag: "\u{1F1EB}\u{1F1EE}", accent: "#2563eb" },
+        NOR: { name: "Norway",          flag: "\u{1F1F3}\u{1F1F4}", accent: "#dc2626" },
+        SWE: { name: "Sweden",          flag: "\u{1F1F8}\u{1F1EA}", accent: "#eab308" },
+        DEN: { name: "Denmark",         flag: "\u{1F1E9}\u{1F1F0}", accent: "#dc2626" },
+        BEL: { name: "Belgium",         flag: "\u{1F1E7}\u{1F1EA}", accent: "#eab308" },
+        HOL: { name: "Netherlands",     flag: "\u{1F1F3}\u{1F1F1}", accent: "#f97316" },
+        MAN: { name: "Manchukuo",       flag: "\u{1F3F4}",          accent: "#eab308" },
+        SIA: { name: "Siam",            flag: "\u{1F1F9}\u{1F1ED}", accent: "#2563eb" },
+        MEX: { name: "Mexico",          flag: "\u{1F1F2}\u{1F1FD}", accent: "#16a34a" },
+        BRA: { name: "Brazil",          flag: "\u{1F1E7}\u{1F1F7}", accent: "#16a34a" },
+        SAF: { name: "South Africa",    flag: "\u{1F1FF}\u{1F1E6}", accent: "#16a34a" },
+        ETH: { name: "Ethiopia",        flag: "\u{1F1EA}\u{1F1F9}", accent: "#16a34a" },
+        IRQ: { name: "Iraq",            flag: "\u{1F1EE}\u{1F1F6}", accent: "#16a34a" },
+        PER: { name: "Persia",          flag: "\u{1F1EE}\u{1F1F7}", accent: "#16a34a" },
+        PHI: { name: "Philippines",     flag: "\u{1F1F5}\u{1F1ED}", accent: "#2563eb" },
+        AST: { name: "Australia",       flag: "\u{1F1E6}\u{1F1FA}", accent: "#2563eb" },
+        NZL: { name: "New Zealand",     flag: "\u{1F1F3}\u{1F1FF}", accent: "#2563eb" },
+    };
+
+    const ALL_NATIONS = { ...NATIONS, ...MINOR_POWERS };
 
     const MOODS = {
         confident:  "#22c55e", anxious:    "#eab308", aggressive: "#ef4444",
@@ -43,6 +82,25 @@
         alliance: "#3b82f6",
     };
 
+    const EVENT_ICONS = {
+        declare_war:     "\u2694\uFE0F",
+        conquer:         "\u{1F5E1}\uFE0F",
+        antagonize:      "\u26A1",
+        prepare_for_war: "\u{1F3AF}",
+        contain:         "\u{1F6E1}\uFE0F",
+        alliance:        "\u{1F91D}",
+        support:         "\u{1F91D}",
+        protect:         "\u{1F6E1}\uFE0F",
+        befriend:        "\u{1F54A}\uFE0F",
+        war_ongoing:     "\u{1F4A5}",
+        capitulation:    "\u{1F3F3}\uFE0F",
+        panicking:       "\u{1F630}",
+        aggressive_mood: "\u{1F4A2}",
+        production:      "\u{1F3ED}",
+        military:        "\u2699\uFE0F",
+        scheming:        "\u{1F9E0}",
+    };
+
     const SVG_NS = "http://www.w3.org/2000/svg";
     const RECONNECT_MS = 2000;
 
@@ -56,6 +114,11 @@
     let latestCountries = {};
     let personas = {};
     let nodePositions = {};
+    let agentHistory = {};
+    let activeAgentTab = "GER";
+    let visibleMinors = new Set();
+    let latestWars = [];
+    let playerTag = null;  // set when user plays as a country
 
     // ─── DOM Refs ───────────────────────────────────────────────────
 
@@ -67,6 +130,7 @@
     document.addEventListener("DOMContentLoaded", () => {
         buildNationCards();
         buildDiploNodes();
+        buildAgentMinds();
         initSpeedControls();
         initWhisper();
         initTimeline();
@@ -110,9 +174,12 @@
     // ─── Update Handler ─────────────────────────────────────────────
 
     function handleUpdate(data) {
+        if (data.player_tag && !playerTag) {
+            playerTag = data.player_tag;
+            applyPlayerMode();
+        }
         if (data.date) {
             $("#game-date").textContent = data.date;
-            updateTensionFromDate(data.date);
         }
         if (data.turn !== undefined) $("#turn-number").textContent = data.turn;
         if (data.world_tension !== undefined) {
@@ -132,22 +199,44 @@
                 if (data.decisions[tag]) {
                     latestDecisions[tag] = data.decisions[tag];
                     updateCard(tag, data.decisions[tag]);
+                    updateAgentMind(tag, data.decisions[tag], data.turn, data.date);
                 }
             }
+            discoverMinorPowers(data.decisions);
             updateDiploWeb();
             addTimelineEntry(data.turn, data.date, data.decisions);
         }
         if (data.countries) {
-            for (const tag of TAGS) {
-                if (data.countries[tag]) {
-                    latestCountries[tag] = data.countries[tag];
-                    updateCardCountry(tag, data.countries[tag]);
+            for (const [tag, c] of Object.entries(data.countries)) {
+                latestCountries[tag] = c;
+                if (TAGS.includes(tag)) {
+                    updateCardCountry(tag, c);
                 }
             }
             updateDiploNodeSizes();
         }
-        if (data.wars) updateWarIndicators(data.wars);
+        if (data.wars) {
+            latestWars = data.wars;
+            updateWarIndicators(data.wars);
+            data.wars.forEach((w) => {
+                [...w.attackers, ...w.defenders].forEach((tag) => {
+                    if (!TAGS.includes(tag)) visibleMinors.add(tag);
+                });
+            });
+        }
         if (data.cost) updateCostDisplay(data.cost);
+    }
+
+    function discoverMinorPowers(decisions) {
+        for (const tag of TAGS) {
+            const dec = decisions[tag];
+            if (!dec || !dec.diplomatic) continue;
+            for (const d of dec.diplomatic) {
+                if (!TAGS.includes(d.target)) {
+                    visibleMinors.add(d.target);
+                }
+            }
+        }
     }
 
     function updateCostDisplay(cost) {
@@ -155,7 +244,6 @@
         if (!el) return;
         const total = cost.total_cost || 0;
         el.textContent = "$" + total.toFixed(2);
-        // Color shift: green under $1, yellow $1-5, red $5+
         if (total >= 5) el.style.color = "#ef4444";
         else if (total >= 1) el.style.color = "#eab308";
         else el.style.color = "#22c55e";
@@ -240,25 +328,24 @@
         const card = document.querySelector(`.nation-card[data-tag="${tag}"]`);
         if (!card) return;
 
-        // Mood
+        // Skip AI updates for the player's country
+        if (tag === playerTag) return;
+
         const mood = (dec.mood || "").toLowerCase();
         const moodEl = card.querySelector('[data-field="mood"]');
         moodEl.textContent = mood || "--";
         moodEl.style.background = MOODS[mood] || "#4a4e65";
         moodEl.style.color = DARK_TEXT_MOODS.has(mood) ? "#000" : "#fff";
 
-        // Monologue preview
         const prev = card.querySelector('[data-field="monologue-preview"]');
         if (dec.inner_monologue) {
             const t = dec.inner_monologue.replace(/\n/g, " ");
             prev.textContent = t.length > 140 ? t.substring(0, 140) + "..." : t;
         }
 
-        // Full monologue
         const full = card.querySelector('[data-field="full-monologue"]');
         if (dec.inner_monologue) full.textContent = dec.inner_monologue;
 
-        // Strategy pills
         const pillBox = card.querySelector('[data-field="strategies"]');
         pillBox.innerHTML = "";
         const items = [];
@@ -273,11 +360,9 @@
             pillBox.appendChild(pill);
         });
 
-        // Threats
         const threatBox = card.querySelector('[data-field="threats"]');
         renderThreats(threatBox, dec.threats || {});
 
-        // Model
         const modelEl = card.querySelector('[data-field="model"]');
         if (dec.model) modelEl.textContent = dec.model;
     }
@@ -296,7 +381,6 @@
     }
 
     function updateWarIndicators(wars) {
-        // Mark nations that are at war
         TAGS.forEach((tag) => {
             const atWar = wars.some((w) => w.attackers.includes(tag) || w.defenders.includes(tag));
             const card = document.querySelector(`.nation-card[data-tag="${tag}"]`);
@@ -314,13 +398,142 @@
         }).join("");
     }
 
+    // ─── Agent Minds (Tabbed) ───────────────────────────────────────
+
+    function buildAgentMinds() {
+        const tabBar = $("#minds-tabs");
+        TAGS.forEach((tag, i) => {
+            const n = NATIONS[tag];
+            const btn = document.createElement("button");
+            btn.className = "minds-tab" + (i === 0 ? " active" : "");
+            btn.dataset.tag = tag;
+            btn.innerHTML = `<span class="tab-flag">${n.flag}</span><span class="tab-name">${n.name}</span>`;
+            btn.addEventListener("click", () => switchAgentTab(tag));
+            tabBar.appendChild(btn);
+        });
+        activeAgentTab = TAGS[0];
+    }
+
+    function switchAgentTab(tag) {
+        activeAgentTab = tag;
+        $$(".minds-tab").forEach((t) => t.classList.toggle("active", t.dataset.tag === tag));
+        renderAgentHistory(tag);
+    }
+
+    function renderAgentHistory(tag) {
+        const content = $("#minds-content");
+        const history = agentHistory[tag] || [];
+        const n = ALL_NATIONS[tag] || { name: tag };
+
+        if (history.length === 0) {
+            content.innerHTML = `<div class="minds-empty">No thinking data yet for ${esc(n.name)}...</div>`;
+            return;
+        }
+
+        content.innerHTML = history.slice().reverse().map((entry) => {
+            const moodColor = MOODS[entry.mood] || "#4a4e65";
+            const darkText = DARK_TEXT_MOODS.has(entry.mood);
+
+            let stratHtml = "";
+            if (entry.diplomatic && entry.diplomatic.length) {
+                stratHtml += entry.diplomatic.map((d) => {
+                    const icon = EVENT_ICONS[d.strategy_type] || "";
+                    return `<span class="strategy-pill pill-${STRATEGY_COLORS[d.strategy_type] || "befriend"}">${icon} ${d.strategy_type} ${d.target}</span>`;
+                }).join("");
+            }
+            if (entry.military && entry.military.length) {
+                stratHtml += entry.military.map((m) =>
+                    `<span class="strategy-pill pill-military">${EVENT_ICONS.military} ${m.strategy_type}</span>`
+                ).join("");
+            }
+            if (entry.production && entry.production.length) {
+                stratHtml += entry.production.map((p) =>
+                    `<span class="strategy-pill pill-production">${EVENT_ICONS.production} ${p.strategy_type.replace(/_/g, " ").substring(0, 25)}</span>`
+                ).join("");
+            }
+
+            return `
+                <div class="mind-entry">
+                    <div class="mind-entry-header">
+                        <span class="mind-turn">T${entry.turn}</span>
+                        <span class="mind-date">${esc(entry.date || "")}</span>
+                        <span class="mind-mood" style="background:${moodColor};color:${darkText ? "#000" : "#fff"}">${entry.mood}</span>
+                        <span class="mind-model">${esc(entry.model || "")}</span>
+                    </div>
+                    <div class="mind-entry-text">${esc(entry.monologue)}</div>
+                    ${stratHtml ? '<div class="mind-entry-strats">' + stratHtml + "</div>" : ""}
+                </div>`;
+        }).join("");
+    }
+
+    function updateAgentMind(tag, decision, turn, date) {
+        if (!agentHistory[tag]) agentHistory[tag] = [];
+        agentHistory[tag].push({
+            turn: turn,
+            date: date,
+            mood: (decision.mood || "").toLowerCase(),
+            monologue: decision.inner_monologue || "",
+            model: decision.model || "",
+            diplomatic: decision.diplomatic || [],
+            military: decision.military || [],
+            production: decision.production || [],
+            threats: decision.threats || {},
+        });
+
+        if (activeAgentTab === tag) {
+            renderAgentHistory(tag);
+        }
+
+        const tab = document.querySelector(`.minds-tab[data-tag="${tag}"]`);
+        if (tab) {
+            const moodColor = MOODS[(decision.mood || "").toLowerCase()] || "#4a4e65";
+            tab.style.borderBottomColor = moodColor;
+        }
+    }
+
+    // ─── Player Mode ────────────────────────────────────────────────
+
+    function applyPlayerMode() {
+        if (!playerTag) return;
+
+        // Update the player's nation card
+        const card = document.querySelector(`.nation-card[data-tag="${playerTag}"]`);
+        if (card) {
+            const moodEl = card.querySelector('[data-field="mood"]');
+            moodEl.textContent = "YOU";
+            moodEl.style.background = "#d4a017";
+            moodEl.style.color = "#000";
+            moodEl.classList.add("card-player-badge");
+
+            const mono = card.querySelector('[data-field="monologue-preview"]');
+            mono.textContent = "You are in command.";
+            mono.style.fontStyle = "normal";
+            mono.style.color = "var(--text-muted)";
+        }
+
+        // Remove player from whisper targets
+        const whisperTarget = $("#whisper-target");
+        if (whisperTarget) {
+            const opt = whisperTarget.querySelector(`option[value="${playerTag}"]`);
+            if (opt) opt.remove();
+        }
+
+        // Remove player tab from Agent Minds
+        const tab = document.querySelector(`.minds-tab[data-tag="${playerTag}"]`);
+        if (tab) tab.style.display = "none";
+
+        // Switch to first non-player tab
+        const firstAI = TAGS.find(t => t !== playerTag);
+        if (firstAI) switchAgentTab(firstAI);
+    }
+
     // ─── Diplomatic Web (SVG) ───────────────────────────────────────
 
     function buildDiploNodes() {
         const svg = $("#diplo-svg");
         const vb = svg.viewBox.baseVal;
         const cx = vb.width / 2, cy = vb.height / 2;
-        const rx = 280, ry = 130;
+        const rx = 280, ry = 140;
         const nodesG = $("#diplo-nodes");
 
         TAGS.forEach((tag, i) => {
@@ -331,14 +544,12 @@
 
             const g = svgEl("g", { class: "diplo-node", "data-tag": tag });
 
-            // War glow circle (hidden by default)
             const warGlow = svgEl("circle", {
                 cx: x, cy: y, r: 42, fill: "#ef444400", class: "war-glow",
                 filter: "url(#war-pulse)",
             });
             g.appendChild(warGlow);
 
-            // Mood ring
             const ring = svgEl("circle", {
                 cx: x, cy: y, r: 34, fill: "none",
                 stroke: NATIONS[tag].accent, "stroke-width": 3,
@@ -346,7 +557,6 @@
             });
             g.appendChild(ring);
 
-            // Inner circle bg
             const bg = svgEl("circle", {
                 cx: x, cy: y, r: 30, fill: "#12121f",
                 stroke: "#1e1e35", "stroke-width": 1,
@@ -354,7 +564,6 @@
             });
             g.appendChild(bg);
 
-            // Flag emoji
             const flag = svgEl("text", {
                 x: x, y: y - 4, "text-anchor": "middle", "dominant-baseline": "central",
                 "font-size": "22", class: "node-flag",
@@ -362,7 +571,6 @@
             flag.textContent = NATIONS[tag].flag;
             g.appendChild(flag);
 
-            // Country name
             const nameEl = svgEl("text", {
                 x: x, y: y + 22, "text-anchor": "middle",
                 fill: "#e8e8f0", "font-size": "10", "font-weight": "700",
@@ -371,7 +579,6 @@
             nameEl.textContent = NATIONS[tag].name;
             g.appendChild(nameEl);
 
-            // Persona name
             const personaEl = svgEl("text", {
                 x: x, y: y + 33, "text-anchor": "middle",
                 fill: "#4a4e65", "font-size": "8", "font-style": "italic",
@@ -384,12 +591,113 @@
         });
     }
 
+    function computeMinorPositions() {
+        const svg = $("#diplo-svg");
+        const vb = svg.viewBox.baseVal;
+        const cx = vb.width / 2, cy = vb.height / 2;
+        const positions = {};
+
+        // Group minors by their most-connected major power
+        const groups = {};
+        for (const minor of visibleMinors) {
+            if (TAGS.includes(minor)) continue;
+            let bestMajor = null, bestScore = 0;
+
+            for (const tag of TAGS) {
+                const dec = latestDecisions[tag];
+                if (!dec || !dec.diplomatic) continue;
+                for (const d of dec.diplomatic) {
+                    if (d.target === minor) {
+                        const score = Math.abs(d.value || 50);
+                        if (score > bestScore) { bestMajor = tag; bestScore = score; }
+                    }
+                }
+            }
+
+            if (!bestMajor) {
+                for (const w of latestWars) {
+                    if (w.attackers.includes(minor) || w.defenders.includes(minor)) {
+                        for (const tag of TAGS) {
+                            if (w.attackers.includes(tag) || w.defenders.includes(tag)) {
+                                bestMajor = tag; break;
+                            }
+                        }
+                        if (bestMajor) break;
+                    }
+                }
+            }
+
+            if (!bestMajor) bestMajor = TAGS[0];
+            if (!groups[bestMajor]) groups[bestMajor] = [];
+            groups[bestMajor].push(minor);
+        }
+
+        for (const [major, minors] of Object.entries(groups)) {
+            const parent = nodePositions[major];
+            if (!parent) continue;
+
+            const dx = parent.x - cx, dy = parent.y - cy;
+            const baseAngle = Math.atan2(dy, dx);
+            const fanSpread = Math.min(Math.PI * 0.6, minors.length * 0.35);
+            const startAngle = baseAngle - fanSpread / 2;
+            const step = minors.length > 1 ? fanSpread / (minors.length - 1) : 0;
+            const dist = 85;
+
+            minors.sort();
+            minors.forEach((minor, i) => {
+                const a = minors.length === 1 ? baseAngle : startAngle + step * i;
+                positions[minor] = {
+                    x: Math.max(35, Math.min(vb.width - 35, parent.x + dist * Math.cos(a))),
+                    y: Math.max(20, Math.min(vb.height - 20, parent.y + dist * Math.sin(a))),
+                };
+            });
+        }
+
+        return positions;
+    }
+
     function updateDiploWeb() {
         const linesG = $("#diplo-lines");
+        const minorNodesG = $("#diplo-minor-nodes");
         linesG.innerHTML = "";
+        minorNodesG.innerHTML = "";
+
+        // Compute and render minor power nodes
+        const minorPositions = computeMinorPositions();
+        for (const [tag, pos] of Object.entries(minorPositions)) {
+            nodePositions[tag] = pos;
+            const info = ALL_NATIONS[tag] || { name: tag, flag: "\u{1F3F3}\uFE0F", accent: "#4a4e65" };
+            const g = svgEl("g", { class: "diplo-node minor-node", "data-tag": tag });
+
+            g.appendChild(svgEl("circle", {
+                cx: pos.x, cy: pos.y, r: 20, fill: "none",
+                stroke: info.accent, "stroke-width": 1.5, opacity: 0.4,
+            }));
+            g.appendChild(svgEl("circle", {
+                cx: pos.x, cy: pos.y, r: 17, fill: "#12121f",
+                stroke: "#1e1e35", "stroke-width": 1,
+            }));
+
+            const flag = svgEl("text", {
+                x: pos.x, y: pos.y - 1, "text-anchor": "middle", "dominant-baseline": "central",
+                "font-size": "14",
+            });
+            flag.textContent = info.flag;
+            g.appendChild(flag);
+
+            const nameEl = svgEl("text", {
+                x: pos.x, y: pos.y + 14, "text-anchor": "middle",
+                fill: "#8b8fa8", "font-size": "7", "font-weight": "600",
+                "letter-spacing": "0.3",
+            });
+            nameEl.textContent = info.name;
+            g.appendChild(nameEl);
+
+            minorNodesG.appendChild(g);
+        }
 
         // Gather all diplomatic relations
-        const relations = []; // { from, to, type, value }
+        const relations = [];
         for (const tag of TAGS) {
             const dec = latestDecisions[tag];
             if (!dec || !dec.diplomatic) continue;
@@ -407,11 +715,11 @@
             if (!p1 || !p2) return;
 
             const color = LINE_COLORS[rel.type] || "#4a4e65";
-            const thickness = Math.max(1, Math.min(4, rel.value / 50));
+            const thickness = Math.max(1, Math.min(4, Math.abs(rel.value) / 50));
             const isFriendly = rel.type === "befriend" || rel.type === "support" || rel.type === "protect";
             const isHostile = rel.type === "antagonize" || rel.type === "conquer";
+            const isMinorLine = !TAGS.includes(rel.to);
 
-            // Offset lines slightly so bidirectional relations don't overlap
             const dx = p2.x - p1.x, dy = p2.y - p1.y;
             const len = Math.sqrt(dx * dx + dy * dy) || 1;
             const nx = -dy / len * 3, ny = dx / len * 3;
@@ -420,9 +728,9 @@
                 x1: p1.x + nx, y1: p1.y + ny,
                 x2: p2.x + nx, y2: p2.y + ny,
                 stroke: color,
-                "stroke-width": thickness,
+                "stroke-width": isMinorLine ? Math.max(1, thickness * 0.7) : thickness,
                 "stroke-linecap": "round",
-                opacity: isHostile ? 0.8 : 0.5,
+                opacity: isMinorLine ? 0.35 : (isHostile ? 0.8 : 0.5),
             });
 
             if (isFriendly) {
@@ -438,11 +746,16 @@
 
         // Update mood rings
         TAGS.forEach((tag) => {
-            const dec = latestDecisions[tag];
-            const mood = dec ? (dec.mood || "").toLowerCase() : "";
-            const color = MOODS[mood] || NATIONS[tag].accent;
             const ring = document.querySelector(`.diplo-node[data-tag="${tag}"] .mood-ring`);
-            if (ring) {
+            if (!ring) return;
+            if (tag === playerTag) {
+                ring.setAttribute("stroke", "#d4a017");
+                ring.setAttribute("opacity", "1");
+                ring.setAttribute("stroke-width", "4");
+            } else {
+                const dec = latestDecisions[tag];
+                const mood = dec ? (dec.mood || "").toLowerCase() : "";
+                const color = MOODS[mood] || NATIONS[tag].accent;
                 ring.setAttribute("stroke", color);
                 ring.setAttribute("opacity", "0.8");
             }
@@ -455,11 +768,7 @@
             if (glow) {
                 const atWar = c && c.at_war;
                 glow.setAttribute("fill", atWar ? "#ef444433" : "#ef444400");
-                if (atWar) {
-                    glow.style.animation = "war-cloud-pulse 2s ease-in-out infinite";
-                } else {
-                    glow.style.animation = "none";
-                }
+                glow.style.animation = atWar ? "war-cloud-pulse 2s ease-in-out infinite" : "none";
             }
         });
 
@@ -475,7 +784,6 @@
             const c = latestCountries[tag];
             if (!c) return;
             const total = (c.mil_factories || 0) + (c.civ_factories || 0) + (c.dockyards || 0);
-            // Scale radius: base 30, max ~44 for 300+ factories
             const r = Math.max(26, Math.min(44, 26 + (total / 20)));
             const bg = document.querySelector(`.diplo-node[data-tag="${tag}"] .node-bg`);
             const ring = document.querySelector(`.diplo-node[data-tag="${tag}"] .mood-ring`);
@@ -491,41 +799,61 @@
         const empty = container.querySelector(".timeline-empty");
         if (empty) empty.remove();
 
-        // Generate headline: pick the most significant diplomatic action
-        const headline = generateHeadline(decisions);
+        const events = collectTimelineEvents(decisions);
 
-        const entry = document.createElement("div");
-        entry.className = "tl-entry";
+        // Board state snapshot icons
+        const boardSnap = TAGS.map((tag) => {
+            const c = latestCountries[tag];
+            const d = decisions[tag];
+            const n = NATIONS[tag];
+            if (!n) return "";
+            const mood = d ? (d.mood || "").toLowerCase() : "";
+            const atWar = c && c.at_war;
 
+            let statusIcon = "";
+            if (atWar) statusIcon = EVENT_ICONS.war_ongoing;
+            else if (mood === "panicking") statusIcon = EVENT_ICONS.panicking;
+            else if (mood === "aggressive") statusIcon = EVENT_ICONS.aggressive_mood;
+            else if (mood === "scheming") statusIcon = EVENT_ICONS.scheming;
+
+            const factories = c ? (c.mil_factories + c.civ_factories + (c.dockyards || 0)) : "?";
+            const divs = c ? c.division_count : "?";
+
+            return `<span class="tl-snap-nation" title="${n.name}: ${factories} factories, ${divs} div, ${mood}">${n.flag}${statusIcon ? '<span class="tl-snap-status">' + statusIcon + "</span>" : ""}</span>`;
+        }).join("");
+
+        // Mood dots
         let moodDots = "";
         TAGS.forEach((tag) => {
             const dec = decisions[tag];
             const mood = dec ? (dec.mood || "").toLowerCase() : "";
             const color = MOODS[mood] || "#4a4e65";
-            moodDots += `<span class="tl-mood-dot" style="background:${color}" title="${NATIONS[tag].name}: ${mood || 'unknown'}">${NATIONS[tag].flag}</span>`;
+            moodDots += `<span class="tl-mood-dot" style="background:${color}" title="${NATIONS[tag].name}: ${mood || "unknown"}">${NATIONS[tag].flag}</span>`;
         });
 
+        // Events list with icons (top 4)
+        const eventsHtml = events.slice(0, 4).map((ev) =>
+            `<div class="tl-event-line"><span class="tl-event-icon">${ev.icon}</span><span class="tl-event-text">${esc(ev.text)}</span></div>`
+        ).join("");
+
+        const entry = document.createElement("div");
+        entry.className = "tl-entry";
         entry.innerHTML = `
             <div class="tl-marker">
                 <span class="tl-turn">T${turn || "?"}</span>
                 <span class="tl-date">${esc(date || "")}</span>
             </div>
             <div class="tl-body">
-                <div class="tl-headline">${esc(headline)}</div>
+                <div class="tl-events-list">${eventsHtml}</div>
+                <div class="tl-board-snap">${boardSnap}</div>
                 <div class="tl-moods">${moodDots}</div>
             </div>`;
 
         container.insertBefore(entry, container.firstChild);
-
-        // Cap at 50
         while (container.children.length > 50) container.removeChild(container.lastChild);
     }
 
-    let lastHeadline = "";
-    let headlineRotation = 0;
-
-    function generateHeadline(decisions) {
-        // Collect ALL interesting events, then pick the most novel one
+    function collectTimelineEvents(decisions) {
         const events = [];
 
         const verbs = {
@@ -537,10 +865,9 @@
             support: "declares support for",
             alliance: "seeks alliance with",
             prepare_for_war: "prepares for war with",
-            declare_war: "declares war on",
+            declare_war: "DECLARES WAR on",
         };
 
-        // Dramatic priority: war > conquer > antagonize > prepare > contain > alliance > support > protect > befriend
         const priority = {
             declare_war: 100, conquer: 80, antagonize: 60, prepare_for_war: 55,
             contain: 40, alliance: 35, support: 30, protect: 25, befriend: 10,
@@ -549,43 +876,40 @@
         for (const tag of TAGS) {
             const dec = decisions[tag];
             if (!dec) continue;
+            const src = NATIONS[tag]?.name || tag;
 
-            // Diplomatic events
             if (dec.diplomatic) {
                 for (const d of dec.diplomatic) {
-                    const src = NATIONS[tag]?.name || tag;
-                    const tgt = NATIONS[d.target]?.name || d.target;
+                    const tgt = ALL_NATIONS[d.target]?.name || d.target;
                     const verb = verbs[d.strategy_type] || "targets";
-                    const score = (priority[d.strategy_type] || 10) + Math.min(d.value / 10, 20);
-                    events.push({ text: `${src} ${verb} ${tgt}`, score });
+                    const icon = EVENT_ICONS[d.strategy_type] || "";
+                    const score = (priority[d.strategy_type] || 10) + Math.min(Math.abs(d.value) / 10, 20);
+                    events.push({ text: `${src} ${verb} ${tgt}`, icon, score });
                 }
             }
 
-            // Mood-based color events
             if (dec.mood === "panicking") {
-                events.push({ text: `${NATIONS[tag]?.name || tag} is PANICKING!`, score: 90 });
+                events.push({ text: `${src} is PANICKING!`, icon: EVENT_ICONS.panicking, score: 90 });
             } else if (dec.mood === "aggressive" && dec.military?.length > 3) {
-                events.push({ text: `${NATIONS[tag]?.name || tag} mobilizes aggressively`, score: 70 });
+                events.push({ text: `${src} mobilizes aggressively`, icon: EVENT_ICONS.aggressive_mood, score: 70 });
+            } else if (dec.mood === "scheming") {
+                events.push({ text: `${src} is scheming...`, icon: EVENT_ICONS.scheming, score: 45 });
+            }
+
+            if (dec.production && dec.production.length > 2) {
+                events.push({ text: `${src} shifts production priorities`, icon: EVENT_ICONS.production, score: 20 });
+            }
+            if (dec.military && dec.military.length > 2) {
+                events.push({ text: `${src} restructures military`, icon: EVENT_ICONS.military, score: 25 });
             }
         }
 
-        if (events.length === 0) return "Nations deliberate in silence...";
+        if (events.length === 0) {
+            events.push({ text: "Nations deliberate in silence...", icon: "\u{1F54A}\uFE0F", score: 0 });
+        }
 
-        // Sort by score descending, then pick one we haven't used recently
         events.sort((a, b) => b.score - a.score);
-
-        // Try to avoid repeating the exact same headline
-        for (const ev of events) {
-            if (ev.text !== lastHeadline) {
-                lastHeadline = ev.text;
-                return ev.text;
-            }
-        }
-
-        // If all are repeats, rotate through the top events
-        headlineRotation = (headlineRotation + 1) % Math.min(events.length, 6);
-        lastHeadline = events[headlineRotation].text;
-        return lastHeadline;
+        return events;
     }
 
     function initTimeline() {
@@ -635,7 +959,7 @@
             .then((r) => r.json())
             .then(() => {
                 input.value = "";
-                showToast(`Whisper sent to ${NATIONS[target.value]?.name || target.value}`);
+                showToast(`Whisper sent to ${ALL_NATIONS[target.value]?.name || target.value}`);
             })
             .catch((err) => console.error("Whisper failed:", err));
         }
@@ -673,23 +997,14 @@
                     personas[p.tag] = p.name;
                     const cardEl = document.querySelector(`.nation-card[data-tag="${p.tag}"] .card-persona`);
                     if (cardEl && p.name) cardEl.textContent = p.name;
-                    const svgEl = document.querySelector(`.diplo-node[data-tag="${p.tag}"] .node-persona`);
-                    if (svgEl && p.name) svgEl.textContent = p.name;
+                    const svgPersonaEl = document.querySelector(`.diplo-node[data-tag="${p.tag}"] .node-persona`);
+                    if (svgPersonaEl && p.name) svgPersonaEl.textContent = p.name;
                 });
             })
             .catch(() => {});
     }
 
     // ─── Helpers ────────────────────────────────────────────────────
-
-    function updateTensionFromDate(dateStr) {
-        const parts = dateStr.split(".");
-        const year = parseInt(parts[0], 10);
-        const month = parts.length > 1 ? parseInt(parts[1], 10) : 1;
-        const total = (1948 - 1936) * 12;
-        const elapsed = (year - 1936) * 12 + (month - 1);
-        // We use this to keep the timeline fill updated even without explicit tension
-    }
 
     function svgEl(type, attrs) {
         const el = document.createElementNS(SVG_NS, type);

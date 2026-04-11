@@ -66,7 +66,7 @@
         </div>
     </div>
     <div class="diplo-canvas">
-        <svg id="diplo-svg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
+        <svg id="diplo-svg" viewBox="0 0 960 520" preserveAspectRatio="xMidYMid meet">
             <defs>
                 <filter id="glow-green"><feGaussianBlur stdDeviation="3" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                 <filter id="glow-red"><feGaussianBlur stdDeviation="2.5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -79,6 +79,8 @@
             <g id="diplo-wars"></g>
             <!-- Faction brackets drawn by JS -->
             <g id="diplo-factions"></g>
+            <!-- Minor power nodes drawn by JS -->
+            <g id="diplo-minor-nodes"></g>
             <!-- Nation nodes drawn by JS -->
             <g id="diplo-nodes"></g>
         </svg>
@@ -89,6 +91,15 @@
 <section class="cards-section">
     <h2 class="section-title">Nation Intelligence</h2>
     <div class="nation-grid" id="nation-grid"></div>
+</section>
+
+<!-- Agent Minds (Tabbed) -->
+<section class="minds-section">
+    <h2 class="section-title">Agent Minds</h2>
+    <div class="minds-tabs" id="minds-tabs"></div>
+    <div class="minds-content" id="minds-content">
+        <div class="minds-empty">Waiting for first turn data...</div>
+    </div>
 </section>
 
 <!-- Event Timeline -->

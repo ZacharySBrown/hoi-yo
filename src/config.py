@@ -1,5 +1,9 @@
-"""Configuration loading for hoi-yo."""
+"""Configuration loading and platform detection for hoi-yo."""
 
+from __future__ import annotations
+
+import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -98,3 +102,142 @@ def load_config(config_path: Path) -> HoiYoConfig:
     cloud = CloudConfig(**{k: v for k, v in cloud_raw.items()})
 
     return HoiYoConfig(game=game, personas=personas, api=api, dashboard=dashboard, cloud=cloud)
+
+
+# ── Platform Detection ───────────────────────────────────────────────
+
+
+def _find_steam_libraries_windows() -> list[Path]:
+    """Parse Steam's libraryfolders.vdf to find all library paths."""
+    vdf_path = Path(r"C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf")
+    libraries = [Path(r"C:\Program Files (x86)\Steam")]
+    if not vdf_path.exists():
+        return libraries
+    try:
+        text = vdf_path.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            line = line.strip().strip('"')
+            if line.startswith("path"):
+                parts = line.split('"')
+                if len(parts) >= 4:
+                    libraries.append(Path(parts[3].replace("\\\\", "\\")))
+    except Exception:
+        pass
+    return libraries
+
+
+def detect_hoi4_paths() -> dict[str, Path | None]:
+    """Auto-detect HOI4 installation paths for the current platform.
+
+    Returns a dict with keys: hoi4_executable, save_dir, mod_dir, config_dir.
+    Values may be ``None`` if the path cannot be found.
+    """
+    exe: Path | None = None
+    docs_base: Path | None = None
+
+    if sys.platform == "win32":
+        # Check default + all Steam library folders
+        libraries = _find_steam_libraries_windows()
+        for lib in libraries:
+            candidate = lib / "steamapps" / "common" / "Hearts of Iron IV" / "hoi4.exe"
+            if candidate.exists():
+                exe = candidate
+                break
+        docs_base = Path.home() / "Documents" / "Paradox Interactive" / "Hearts of Iron IV"
+
+    elif sys.platform == "darwin":
+        candidates = [
+            Path.home() / "Library" / "Application Support" / "Steam"
+            / "steamapps" / "common" / "Hearts of Iron IV" / "hoi4.app",
+        ]
+        for c in candidates:
+            if c.exists():
+                exe = c
+                break
+        docs_base = Path.home() / "Documents" / "Paradox Interactive" / "Hearts of Iron IV"
+
+    else:  # Linux
+        candidates = [
+            Path.home() / ".steam" / "steamapps" / "common" / "Hearts of Iron IV" / "hoi4",
+            Path.home() / ".local" / "share" / "Steam"
+            / "steamapps" / "common" / "Hearts of Iron IV" / "hoi4",
+            Path("/opt/hoi4/hoi4"),
+        ]
+        for c in candidates:
+            if c.exists():
+                exe = c
+                break
+        docs_base = Path.home() / "Documents" / "Paradox Interactive" / "Hearts of Iron IV"
+
+    return {
+        "hoi4_executable": exe,
+        "save_dir": (docs_base / "save games") if docs_base else None,
+        "mod_dir": (docs_base / "mod" / "hoi_yo_bots") if docs_base else None,
+        "config_dir": docs_base,
+    }
+
+
+def get_app_data_dir() -> Path:
+    """Return the platform-appropriate app data directory for hoi-yo config."""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return base / "hoi-yo"
+
+
+def find_config() -> Path | None:
+    """Search for config.toml in standard locations.
+
+    Search order: CWD → app data dir → None.
+    """
+    cwd_config = Path("config.toml")
+    if cwd_config.exists():
+        return cwd_config
+
+    app_config = get_app_data_dir() / "config.toml"
+    if app_config.exists():
+        return app_config
+
+    return None
+
+
+def write_config(path: Path, paths: dict, persona_mappings: dict[str, str] | None = None) -> None:
+    """Generate a config.toml file from detected paths and settings."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    personas = persona_mappings or {
+        "GER": "personas/germany",
+        "SOV": "personas/soviet_union",
+        "USA": "personas/usa",
+        "ENG": "personas/united_kingdom",
+        "JAP": "personas/japan",
+        "ITA": "personas/italy",
+    }
+    persona_lines = "\n".join(f'{k} = "{v}"' for k, v in sorted(personas.items()))
+
+    content = f"""\
+[game]
+hoi4_executable = "{paths.get('hoi4_executable', '')}"
+save_dir = "{paths.get('save_dir', '')}"
+mod_dir = "{paths.get('mod_dir', '')}"
+config_dir = "{paths.get('config_dir', '')}"
+autosave_interval = "MONTHLY"
+initial_speed = 3
+use_plaintext_saves = true
+
+[personas]
+{persona_lines}
+
+[api]
+default_model = "claude-haiku-4-5"
+war_model = "claude-sonnet-4-6"
+crisis_model = "claude-opus-4-6"
+max_output_tokens = 2000
+
+[dashboard]
+port = 8080
+"""
+    path.write_text(content, encoding="utf-8")

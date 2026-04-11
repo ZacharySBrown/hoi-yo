@@ -1,27 +1,23 @@
 """Controls the Hearts of Iron IV game process.
 
-Provides methods to launch HOI4, send console commands via xdotool, and
-manage the game lifecycle.  Falls back gracefully when the executable is
-missing so the orchestrator can still run with a manually-launched game.
+Provides methods to launch HOI4, send console commands, and manage the
+game lifecycle.  Console automation uses platform-specific input backends
+(xdotool on Linux, AppleScript on macOS, pyautogui on Windows).
 """
 
 from __future__ import annotations
 
 import logging
 import os
-import shutil
 import subprocess
-import time
 from pathlib import Path
+
+from src.game.input_backends import InputBackend, get_input_backend
 
 logger = logging.getLogger(__name__)
 
 # Default launch flags -- keeps the game quiet and debug-friendly.
 DEFAULT_LAUNCH_FLAGS = ["-debug", "-nolog", "-nomusic", "-nosound"]
-
-# Delay between xdotool keystrokes to let the console catch up.
-_XDOTOOL_DELAY_MS = 50
-_CONSOLE_SETTLE_SECS = 0.3
 
 
 class GameController:
@@ -33,13 +29,14 @@ class GameController:
         Path to the HOI4 binary.
     use_xvfb : bool
         If ``True``, set ``DISPLAY=:99`` so the game runs inside a virtual
-        framebuffer (headless server mode).
+        framebuffer (headless server mode).  Only relevant on Linux.
     """
 
     def __init__(self, executable: Path, use_xvfb: bool = False) -> None:
         self.executable = executable
         self.use_xvfb = use_xvfb
         self._process: subprocess.Popen | None = None  # type: ignore[type-arg]
+        self._backend: InputBackend = get_input_backend(use_xvfb=use_xvfb)
 
     # ── Lifecycle ─────────────────────────────────────────────────────
 
@@ -100,62 +97,14 @@ class GameController:
     # ── Console commands ──────────────────────────────────────────────
 
     def send_console_command(self, cmd: str) -> bool:
-        """Type *cmd* into the HOI4 debug console via xdotool.
+        """Type *cmd* into the HOI4 debug console.
 
-        Sequence: press grave (backtick) to open console -> type command ->
-        press Return -> press grave again to close console.
+        Uses the platform-specific input backend (xdotool / AppleScript /
+        pyautogui) to open the console, type the command, and close it.
 
-        Returns ``True`` on success, ``False`` if xdotool is unavailable.
+        Returns ``True`` on success.
         """
-        if not shutil.which("xdotool"):
-            logger.warning("xdotool not found -- cannot send console command: %s", cmd)
-            return False
-
-        env = os.environ.copy()
-        if self.use_xvfb:
-            env["DISPLAY"] = ":99"
-
-        try:
-            # Open the console
-            subprocess.run(
-                ["xdotool", "key", "grave"],
-                env=env,
-                check=True,
-                timeout=5,
-            )
-            time.sleep(_CONSOLE_SETTLE_SECS)
-
-            # Type the command
-            subprocess.run(
-                ["xdotool", "type", "--delay", str(_XDOTOOL_DELAY_MS), cmd],
-                env=env,
-                check=True,
-                timeout=10,
-            )
-            time.sleep(_CONSOLE_SETTLE_SECS)
-
-            # Execute
-            subprocess.run(
-                ["xdotool", "key", "Return"],
-                env=env,
-                check=True,
-                timeout=5,
-            )
-            time.sleep(_CONSOLE_SETTLE_SECS)
-
-            # Close the console
-            subprocess.run(
-                ["xdotool", "key", "grave"],
-                env=env,
-                check=True,
-                timeout=5,
-            )
-
-            logger.debug("Sent console command: %s", cmd)
-            return True
-        except (subprocess.SubprocessError, OSError) as exc:
-            logger.warning("Failed to send console command '%s': %s", cmd, exc)
-            return False
+        return self._backend.send_console_command(cmd)
 
     # ── Convenience wrappers ──────────────────────────────────────────
 

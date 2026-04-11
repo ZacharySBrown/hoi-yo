@@ -76,3 +76,58 @@ def load_all_personas(
                 personas.append(load_persona(subdir))
 
     return sorted(personas, key=lambda p: p.tag)
+
+
+def discover_personas(personas_dir: Path) -> dict[str, list[dict]]:
+    """Scan personas directory and return all available personas grouped by tag.
+
+    Returns a dict mapping country tags to lists of persona metadata::
+
+        {"SOV": [
+            {"path": "personas/soviet_union", "name": "Joseph Stalin", "tag": "SOV", "excerpt": "..."},
+            {"path": "personas/soviet_union_alt_trotsky", "name": "Leon Trotsky", ...},
+        ]}
+    """
+    result: dict[str, list[dict]] = {}
+
+    for subdir in sorted(personas_dir.iterdir()):
+        if not subdir.is_dir():
+            continue
+        soul_path = subdir / "SOUL.md"
+        config_path = subdir / "config.toml"
+        if not soul_path.exists() or not config_path.exists():
+            continue
+
+        try:
+            config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+            tag = config.get("tag", "")
+            name = config.get("name", subdir.name)
+
+            # Extract excerpt: first non-header, non-empty line(s) from SOUL.md
+            soul_text = soul_path.read_text(encoding="utf-8")
+            excerpt_lines = []
+            for line in soul_text.splitlines():
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    if excerpt_lines:
+                        break
+                    continue
+                excerpt_lines.append(stripped)
+                if len(" ".join(excerpt_lines)) >= 150:
+                    break
+            excerpt = " ".join(excerpt_lines)[:200]
+
+            entry = {
+                "path": str(subdir),
+                "name": name,
+                "tag": tag,
+                "excerpt": excerpt,
+            }
+
+            if tag not in result:
+                result[tag] = []
+            result[tag].append(entry)
+        except Exception:
+            continue
+
+    return result

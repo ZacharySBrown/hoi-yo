@@ -112,6 +112,12 @@ def cli(ctx: click.Context, config: str, verbose: bool) -> None:
 )
 @click.option("--popcorn", is_flag=True, help="Enable Popcorn Mode (pause between turns for viewing).")
 @click.option("--deep-dive", is_flag=True, help="Enable Deep Dive Mode (extra-long think on every turn).")
+@click.option(
+    "--play-as",
+    type=click.Choice(["GER", "SOV", "USA", "ENG", "JAP", "ITA"], case_sensitive=False),
+    default=None,
+    help="Play as this country (AI controls the rest).",
+)
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -120,6 +126,7 @@ def run(
     persona: tuple[str, ...],
     popcorn: bool,
     deep_dive: bool,
+    play_as: str | None,
 ) -> None:
     """Start the full game loop.
 
@@ -152,6 +159,11 @@ def run(
     click.echo(f"  Speed:     {config.game.initial_speed}")
     click.echo(f"  Popcorn:   {'ON' if popcorn else 'OFF'}")
     click.echo(f"  Deep Dive: {'ON' if deep_dive else 'OFF'}")
+    if play_as:
+        play_as = play_as.upper()
+        click.echo(f"  Play As:   {play_as}")
+    else:
+        click.echo(f"  Play As:   Observer (all AI)")
     click.echo()
     click.echo("  Personas:")
     for tag, path in sorted(config.personas.mappings.items()):
@@ -207,6 +219,7 @@ def run(
         headless=(mode == "headless"),
         popcorn=popcorn,
         deep_dive=deep_dive,
+        player_tag=play_as,
     )
 
     try:

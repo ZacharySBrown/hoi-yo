@@ -38,6 +38,7 @@ class HoiYoOrchestrator:
         headless: bool = False,
         popcorn: bool = False,
         deep_dive: bool = False,
+        player_tag: str | None = None,
     ):
         self.config = config
         self.personas = personas
@@ -45,6 +46,7 @@ class HoiYoOrchestrator:
         self.headless = headless
         self.popcorn = popcorn
         self.deep_dive = deep_dive
+        self.player_tag = player_tag
 
         self.client = AsyncAnthropic()
         self.board_builder = BoardStateBuilder()
@@ -118,6 +120,10 @@ class HoiYoOrchestrator:
         # 4. Inject whispers into personas temporarily
         augmented_personas = self._apply_whispers()
 
+        # 4b. Filter out the player's country (play-alongside mode)
+        if self.player_tag:
+            augmented_personas = [p for p in augmented_personas if p.tag != self.player_tag]
+
         # 5. Run all agents in parallel
         try:
             decisions = await run_agents(
@@ -131,10 +137,13 @@ class HoiYoOrchestrator:
             logger.exception("Agent runner failed on turn %d", self.turn_number)
             return
 
-        # 6. Write new strategy files
+        # 6. Write new strategy files (skip player's country)
+        write_decisions = decisions
+        if self.player_tag:
+            write_decisions = [d for d in decisions if d.tag != self.player_tag]
         try:
-            self.writer.write_all(decisions, self.config.game.mod_dir)
-            logger.info("Wrote strategy files for %d agents", len(decisions))
+            self.writer.write_all(write_decisions, self.config.game.mod_dir)
+            logger.info("Wrote strategy files for %d agents", len(write_decisions))
         except Exception:
             logger.exception("Failed to write strategy files")
             return
@@ -151,6 +160,7 @@ class HoiYoOrchestrator:
             "turn": self.turn_number,
             "date": raw_state.date,
             "world_tension": raw_state.world_tension,
+            "player_tag": self.player_tag,
             "decisions": {d.tag: d.to_dict() for d in decisions},
             "countries": {
                 tag: {

@@ -17,6 +17,7 @@ dependencies = [
     "bcrypt>=4.1",
     "aiosqlite>=0.19",
     "python-multipart>=0.0.5",
+    "pyautogui>=0.9",
 ]
 
 [project.optional-dependencies]
