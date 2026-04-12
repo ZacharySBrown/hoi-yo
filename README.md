@@ -13,8 +13,13 @@
 
 Six Claude-powered AI personas play Hearts of Iron IV simultaneously, each with a distinct personality, strategic doctrine, and inner monologue. Watch Bismarck scheme, Stalin industrialize, Churchill speechify, and Roosevelt charge -- all making real strategic decisions every game month.
 
-<!-- TODO: Replace with actual gameplay recording -->
-> **Video coming soon** -- a full recording of agents deliberating, strategizing, and backstabbing their way through WWII.
+<p align="center">
+  <img src="assets/demo.gif" alt="hoi-yo dashboard demo showing AI agent inner monologues and strategy decisions" width="720">
+</p>
+
+<p align="center"><em>Six AI personas scheming, strategizing, and trash-talking their way through WWII.</em></p>
+
+> Full video: [assets/demo.mp4](assets/demo.mp4)
 
 ---
 
