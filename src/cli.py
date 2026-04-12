@@ -118,6 +118,12 @@ def cli(ctx: click.Context, config: str, verbose: bool) -> None:
     default=None,
     help="Play as this country (AI controls the rest).",
 )
+@click.option(
+    "--persona-mode",
+    "persona_mode",
+    default=None,
+    help="Persona mode to use (e.g. classic, modern). See config.toml for available modes.",
+)
 @click.pass_context
 def run(
     ctx: click.Context,
@@ -127,6 +133,7 @@ def run(
     popcorn: bool,
     deep_dive: bool,
     play_as: str | None,
+    persona_mode: str | None,
 ) -> None:
     """Start the full game loop.
 
@@ -134,6 +141,14 @@ def run(
     the controller will launch HOI4 inside a virtual framebuffer.
     """
     config = _resolve_config(ctx)
+
+    # Apply persona mode selection
+    if persona_mode:
+        try:
+            config.personas.select_mode(persona_mode)
+        except ValueError as e:
+            click.echo(f"Error: {e}", err=True)
+            ctx.exit(1)
 
     # Apply CLI overrides
     if speed is not None:
@@ -155,7 +170,9 @@ def run(
 
     # Startup banner
     click.echo(BANNER)
+    active_mode = persona_mode or config.personas.default_mode
     click.echo(f"  Mode:      {mode}")
+    click.echo(f"  Personas:  {active_mode} ({', '.join(config.personas.available_modes)} available)")
     click.echo(f"  Speed:     {config.game.initial_speed}")
     click.echo(f"  Popcorn:   {'ON' if popcorn else 'OFF'}")
     click.echo(f"  Deep Dive: {'ON' if deep_dive else 'OFF'}")

@@ -27,11 +27,25 @@ class GameConfig:
 
 @dataclass
 class PersonaMapping:
-    """Maps country tags to persona directory paths."""
+    """Maps country tags to persona directory paths, with mode support."""
     mappings: dict[str, str] = field(default_factory=dict)
+    modes: dict[str, dict[str, str]] = field(default_factory=dict)
+    default_mode: str = "classic"
 
     def get_path(self, tag: str) -> Path:
         return Path(self.mappings[tag])
+
+    def select_mode(self, mode: str) -> None:
+        """Switch active mappings to the given mode."""
+        if mode in self.modes:
+            self.mappings = dict(self.modes[mode])
+        else:
+            available = ", ".join(sorted(self.modes.keys()))
+            raise ValueError(f"Unknown persona mode '{mode}'. Available: {available}")
+
+    @property
+    def available_modes(self) -> list[str]:
+        return sorted(self.modes.keys())
 
 
 @dataclass
@@ -90,7 +104,20 @@ def load_config(config_path: Path) -> HoiYoConfig:
     )
 
     personas_raw = raw.get("personas", {})
-    personas = PersonaMapping(mappings=personas_raw)
+    default_mode = personas_raw.pop("default_mode", "classic")
+    # Separate mode sub-tables (dicts) from flat tag mappings (strings)
+    modes: dict[str, dict[str, str]] = {}
+    flat_mappings: dict[str, str] = {}
+    for key, value in personas_raw.items():
+        if isinstance(value, dict):
+            modes[key] = value
+        else:
+            flat_mappings[key] = value
+    # If no mode sub-tables found, treat flat mappings as "classic"
+    if not modes and flat_mappings:
+        modes["classic"] = flat_mappings
+    active = modes.get(default_mode, next(iter(modes.values()), {}))
+    personas = PersonaMapping(mappings=dict(active), modes=modes, default_mode=default_mode)
 
     api_raw = raw.get("api", {})
     api = ApiConfig(**{k: v for k, v in api_raw.items()})

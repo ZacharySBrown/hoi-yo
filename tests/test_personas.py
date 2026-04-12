@@ -11,11 +11,17 @@ from src.personas.loader import load_all_personas, load_persona
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PERSONAS_DIR = PROJECT_ROOT / "personas"
 
-# All 9 expected persona directories
+# All expected persona directories
 EXPECTED_DIRS = [
     "germany",
     "italy",
     "japan",
+    "modern_germany",
+    "modern_italy",
+    "modern_japan",
+    "modern_russia",
+    "modern_uk",
+    "modern_usa",
     "soviet_union",
     "soviet_union_alt_khrushchev",
     "soviet_union_alt_rasputin",
@@ -87,6 +93,12 @@ EXPECTED_PERSONAS = {
     "soviet_union_alt_khrushchev": ("SOV", "Nikita Khrushchev"),
     "soviet_union_alt_rasputin": ("SOV", "Grigory Rasputin"),
     "soviet_union_alt_trotsky": ("SOV", "Leon Trotsky"),
+    "modern_germany": ("GER", "The Iron Accountant"),
+    "modern_russia": ("SOV", "The Grandmaster"),
+    "modern_usa": ("USA", "The Commander-in-Tweet"),
+    "modern_uk": ("ENG", "The Rt. Hon. Chaos Coordinator"),
+    "modern_japan": ("JAP", "The CEO-Premier"),
+    "modern_italy": ("ITA", "Il Magnifico"),
 }
 
 
@@ -140,9 +152,9 @@ class TestPersonaContent:
 class TestLoadAllPersonas:
     """Test bulk loading of all personas."""
 
-    def test_load_all_finds_all_nine(self) -> None:
+    def test_load_all_finds_all_personas(self) -> None:
         personas = load_all_personas(PERSONAS_DIR)
-        assert len(personas) == 9
+        assert len(personas) == 15
 
     def test_load_all_returns_sorted_by_tag(self) -> None:
         personas = load_all_personas(PERSONAS_DIR)

@@ -9,12 +9,23 @@ initial_speed = 3
 use_plaintext_saves = true
 
 [personas]
+default_mode = "classic"
+
+[personas.classic]
 GER = "personas/germany"
 SOV = "personas/soviet_union"
 USA = "personas/usa"
 ENG = "personas/united_kingdom"
 JAP = "personas/japan"
 ITA = "personas/italy"
+
+[personas.modern]
+GER = "personas/modern_germany"
+SOV = "personas/modern_russia"
+USA = "personas/modern_usa"
+ENG = "personas/modern_uk"
+JAP = "personas/modern_japan"
+ITA = "personas/modern_italy"
 
 [api]
 default_model = "claude-haiku-4-5"
