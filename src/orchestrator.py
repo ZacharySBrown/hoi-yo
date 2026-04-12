@@ -88,10 +88,37 @@ class HoiYoOrchestrator:
             if self.game:
                 self.game.stop()
 
+    def _poll_signal_files(self):
+        """Check for whisper and swap signal files written by the CLI."""
+        # Whispers: logs/whisper_TAG.txt
+        for signal in self.log_dir.glob("whisper_*.txt"):
+            tag = signal.stem.removeprefix("whisper_").upper()
+            message = signal.read_text(encoding="utf-8").strip()
+            if message:
+                self.add_whisper(tag, message)
+            signal.unlink()
+
+        # Swaps: logs/swap_TAG.signal (contents = new persona path)
+        for signal in self.log_dir.glob("swap_*.signal"):
+            tag = signal.stem.removeprefix("swap_").upper()
+            persona_path = Path(signal.read_text(encoding="utf-8").strip())
+            signal.unlink()
+            if not persona_path.is_absolute():
+                persona_path = Path.cwd() / persona_path
+            if not (persona_path / "SOUL.md").exists():
+                logger.warning("Swap signal for %s: no SOUL.md at %s", tag, persona_path)
+                continue
+            from src.personas.loader import load_persona
+            new_persona = load_persona(persona_path)
+            self.swap_persona(tag, new_persona)
+
     async def _process_turn(self, save_path: Path):
         """Process a single game turn."""
         self.turn_number += 1
         logger.info("=== Turn %d | Processing %s ===", self.turn_number, save_path.name)
+
+        # Check for whisper/swap signals from the CLI
+        self._poll_signal_files()
 
         # 1. Parse the save file
         try:
