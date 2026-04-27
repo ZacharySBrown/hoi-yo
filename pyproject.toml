@@ -18,6 +18,7 @@ dependencies = [
     "aiosqlite>=0.19",
     "python-multipart>=0.0.5",
     "pyautogui>=0.9",
+    "openai>=1.0",
 ]
 
 [project.optional-dependencies]

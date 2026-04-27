@@ -31,3 +31,6 @@ Thumbs.db
 
 # HOI4
 *.hoi4
+
+# Generated TTS audio
+src/dashboard/static/audio/

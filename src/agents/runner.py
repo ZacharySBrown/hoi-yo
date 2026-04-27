@@ -246,13 +246,39 @@ def _build_user_message(
 
     recent_events = board_state.recent_events_for(tag)
 
+    # Rotating opener-style hint to force variety across turns and personas
+    style_hint = _opener_style(tag, turn)
+
     return (
         f"TURN {turn} | Date: {board_state.date}\n\n"
         f"YOUR COUNTRY STATE:\n{country_detail}\n\n"
         f"RECENT EVENTS:\n{recent_events}\n\n"
-        "Respond with your strategic decisions by calling the submit_strategy tool. "
-        "Include a brief inner_monologue written in-character explaining your reasoning."
+        f"VOICE HINT FOR THIS TURN: open with a {style_hint}. "
+        "Do NOT repeat phrasing you used last turn. Keep it 2-4 sentences.\n\n"
+        "Respond by calling the submit_strategy tool with your strategic decisions "
+        "and a brief in-character inner_monologue."
     )
+
+
+_OPENER_STYLES = (
+    "sharp declaration",
+    "rhetorical question to yourself",
+    "single dramatic image (one sentence, then your action)",
+    "complaint or grievance",
+    "quoted retort to an imaginary advisor",
+    "command to a subordinate",
+)
+
+
+def _opener_style(tag: str, turn: int) -> str:
+    """Pick a rotating opener style for this turn/persona combo.
+
+    Indexing by (turn + tag_offset) so the 6 personas pick different styles
+    on the same turn, and each persona rotates through styles across turns.
+    """
+    tag_offsets = {"GER": 0, "SOV": 1, "USA": 2, "ENG": 3, "JAP": 4, "ITA": 5}
+    idx = (turn + tag_offsets.get(tag, 0)) % len(_OPENER_STYLES)
+    return _OPENER_STYLES[idx]
 
 
 def _extract_tool_input(response: Any) -> dict:

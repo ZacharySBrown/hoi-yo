@@ -134,6 +134,7 @@
         initSpeedControls();
         initWhisper();
         initTimeline();
+        initAudioQueue();
         loadInitialData();
         connectWebSocket();
     });
@@ -205,6 +206,8 @@
             discoverMinorPowers(data.decisions);
             updateDiploWeb();
             addTimelineEntry(data.turn, data.date, data.decisions);
+            // Queue up TTS audio for sequential playback
+            audioQueue.enqueueTurn(data.decisions);
         }
         if (data.countries) {
             for (const [tag, c] of Object.entries(data.countries)) {
@@ -1002,6 +1005,139 @@
                 });
             })
             .catch(() => {});
+    }
+
+    // ─── Audio Queue (TTS playback) ────────────────────────────────
+
+    const audioQueue = {
+        queue: [],
+        playing: false,
+        currentAudio: null,
+        muted: localStorage.getItem("hoi-yo-muted") === "1",
+        unlocked: false,  // browser autoplay gate
+        currentTag: null,
+
+        enqueueTurn(decisions) {
+            if (!decisions) return;
+            for (const tag of TAGS) {
+                const d = decisions[tag];
+                if (d && d.audio_url) this.queue.push({ tag, url: d.audio_url });
+            }
+            if (!this.playing) this._playNext();
+        },
+
+        async _playNext() {
+            if (this.muted || this.queue.length === 0) {
+                this.playing = false;
+                this._clearSpeaking();
+                return;
+            }
+            this.playing = true;
+            const { tag, url } = this.queue.shift();
+            this._setSpeaking(tag);
+
+            const audio = new Audio(url);
+            this.currentAudio = audio;
+            await new Promise((resolve) => {
+                audio.onended = resolve;
+                audio.onerror = (e) => {
+                    console.warn("Audio failed:", url, e);
+                    resolve();
+                };
+                const playPromise = audio.play();
+                if (playPromise) {
+                    playPromise.catch((err) => {
+                        // Autoplay blocked -- show prompt
+                        if (!this.unlocked) showAudioPrompt();
+                        resolve();
+                    });
+                }
+            });
+            this.currentAudio = null;
+            this._clearSpeaking();
+            this._playNext();
+        },
+
+        _setSpeaking(tag) {
+            this.currentTag = tag;
+            const node = document.querySelector(`.diplo-node[data-tag="${tag}"]`);
+            if (node) node.classList.add("speaking");
+            const card = document.querySelector(`.nation-card[data-tag="${tag}"]`);
+            if (card) card.classList.add("speaking");
+        },
+
+        _clearSpeaking() {
+            if (!this.currentTag) return;
+            const node = document.querySelector(`.diplo-node[data-tag="${this.currentTag}"]`);
+            if (node) node.classList.remove("speaking");
+            const card = document.querySelector(`.nation-card[data-tag="${this.currentTag}"]`);
+            if (card) card.classList.remove("speaking");
+            this.currentTag = null;
+        },
+
+        toggleMute() {
+            this.muted = !this.muted;
+            localStorage.setItem("hoi-yo-muted", this.muted ? "1" : "0");
+            updateMuteButton();
+            if (this.muted) {
+                this.queue = [];
+                if (this.currentAudio) this.currentAudio.pause();
+                this._clearSpeaking();
+                this.playing = false;
+            }
+        },
+
+        unlock() {
+            this.unlocked = true;
+            hideAudioPrompt();
+        },
+    };
+
+    function initAudioQueue() {
+        const btn = document.getElementById("mute-btn");
+        if (btn) {
+            btn.addEventListener("click", () => audioQueue.toggleMute());
+        }
+        updateMuteButton();
+        // First user click anywhere unlocks audio playback
+        document.addEventListener("click", () => audioQueue.unlock(), { once: true });
+    }
+
+    function updateMuteButton() {
+        const btn = document.getElementById("mute-btn");
+        const icon = document.getElementById("mute-icon");
+        const label = document.getElementById("mute-label");
+        if (!btn) return;
+        if (audioQueue.muted) {
+            btn.classList.add("muted");
+            if (icon) icon.textContent = "🔇";  // muted speaker
+            if (label) label.textContent = "VOICES OFF";
+        } else {
+            btn.classList.remove("muted");
+            if (icon) icon.textContent = "🔊";  // speaker
+            if (label) label.textContent = "VOICES ON";
+        }
+    }
+
+    function showAudioPrompt() {
+        let el = document.getElementById("audio-prompt");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "audio-prompt";
+            el.className = "audio-prompt";
+            el.textContent = "🔊 Click anywhere to enable agent voices";
+            document.body.appendChild(el);
+            el.addEventListener("click", () => {
+                audioQueue.unlock();
+                el.classList.remove("visible");
+            });
+        }
+        el.classList.add("visible");
+    }
+
+    function hideAudioPrompt() {
+        const el = document.getElementById("audio-prompt");
+        if (el) el.classList.remove("visible");
     }
 
     // ─── Helpers ────────────────────────────────────────────────────

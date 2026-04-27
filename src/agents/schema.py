@@ -62,8 +62,15 @@ STRATEGY_UPDATE_SCHEMA: dict = {
         "inner_monologue": {
             "type": "string",
             "description": (
-                "In-character reasoning about the current situation. "
-                "Written in the voice of the persona. Displayed on the dashboard."
+                "In-character reasoning. MAXIMUM 2-4 sentences (200-400 chars total). "
+                "Be punchy and varied -- this is spoken aloud. "
+                "DO NOT start every turn the same way. AVOID stock openers like "
+                "'The Party notes that...', 'France has three enemies...', "
+                "'I see that...', 'Let me consider...', 'The board shows...', "
+                "'Allow me to assess...'. "
+                "Mix opening structures: a sharp declaration, a rhetorical question, "
+                "a single dramatic image, a complaint, a quoted retort, or a command. "
+                "Stay in character but be DIFFERENT every turn."
             ),
         },
         "mood": {

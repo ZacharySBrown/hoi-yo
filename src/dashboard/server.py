@@ -121,7 +121,8 @@ _game_process: subprocess.Popen | None = None  # HOI4 process
 
 app = FastAPI(title="HOI-YO Observer Dashboard", version="0.1.0")
 
-# Mount static files (CSS, JS)
+# Mount static files (CSS, JS, audio)
+(STATIC_DIR / "audio").mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 

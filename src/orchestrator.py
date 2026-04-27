@@ -9,12 +9,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 
 from anthropic import AsyncAnthropic
 
 from src.agents.runner import run_agents, cost_tracker
+from src.tts.generator import TTSGenerator
+from src.tts.openai_tts import OpenAITTSProvider
 from src.board_state.builder import BoardStateBuilder
 from src.config import HoiYoConfig
 from src.dashboard.server import DashboardServer
@@ -55,6 +58,19 @@ class HoiYoOrchestrator:
         self.turn_number = 0
         self.log_dir = Path("logs")
         self._whisper_queue: dict[str, str] = {}  # tag -> message
+
+        # TTS setup -- generator is inert if no OPENAI_API_KEY is set
+        campaign_id = os.environ.get("HOIYO_CAMPAIGN_ID", "local")
+        audio_dir = Path(__file__).parent / "dashboard" / "static" / "audio"
+        self.tts = TTSGenerator(
+            provider=OpenAITTSProvider(),
+            output_dir=audio_dir,
+            campaign_id=campaign_id,
+        )
+        if self.tts.is_enabled:
+            logger.info("TTS enabled: writing audio to %s", audio_dir / campaign_id)
+        else:
+            logger.info("TTS disabled (set OPENAI_API_KEY to enable voiced personas)")
 
     async def run(self):
         """Start the full agent loop."""
@@ -182,13 +198,29 @@ class HoiYoOrchestrator:
         # 8. Log decisions
         self._log_decisions(decisions, raw_state.date)
 
+        # 8b. Synthesize TTS audio for each agent's monologue (parallel)
+        audio_urls = {}
+        if self.tts.is_enabled:
+            try:
+                audio_urls = await self.tts.synthesize_turn(decisions, self.turn_number)
+                if audio_urls:
+                    logger.info("TTS: %d clips generated, $%.4f total",
+                                 len(audio_urls), self.tts.cost.total_cost)
+            except Exception:
+                logger.exception("TTS synthesis failed for turn %d", self.turn_number)
+
         # 9. Push to dashboard
+        decisions_dict = {d.tag: d.to_dict() for d in decisions}
+        for tag, url in audio_urls.items():
+            if tag in decisions_dict:
+                decisions_dict[tag]["audio_url"] = url
+
         turn_data = {
             "turn": self.turn_number,
             "date": raw_state.date,
             "world_tension": raw_state.world_tension,
             "player_tag": self.player_tag,
-            "decisions": {d.tag: d.to_dict() for d in decisions},
+            "decisions": decisions_dict,
             "countries": {
                 tag: {
                     "name": cs.name,
@@ -210,6 +242,7 @@ class HoiYoOrchestrator:
                 for w in raw_state.wars
             ],
             "cost": cost_tracker.to_dict(),
+            "tts_cost": self.tts.cost.to_dict() if self.tts.is_enabled else None,
         }
         await self.dashboard.broadcast(turn_data)
 
